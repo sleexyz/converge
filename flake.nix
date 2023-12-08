@@ -10,12 +10,12 @@
           devShell = mkShell {
             name = "devEnvironment";
             buildInputs = [
+              cowsay
+              # Tauri deps
               bun
-              entr
               rustc
               cargo
               libiconv
-              cowsay
               (pkgs.darwin.apple_sdk.frameworks.Carbon)
               (pkgs.darwin.apple_sdk.frameworks.WebKit)
             ];
