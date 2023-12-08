@@ -20,25 +20,20 @@ class CursorTracker: ObservableObject {
     private func setupTracking() {
         NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { [weak self] event in
             DispatchQueue.main.async {
-                self?.updateCursorPosition(event)
+                if let cursorPosition = self?.getCursorPositionGlobal(event) {
+                    self?.cursorPosition = cursorPosition
+                }
             }
-        }
-
-        NSEvent.addLocalMonitorForEvents(matching: .mouseMoved) { [weak self] event in
-            self?.updateCursorPosition(event)
-            return event
         }
     }
 
-    private func updateCursorPosition(_ event: NSEvent) {
+    private func getCursorPositionGlobal(_ event: NSEvent) -> CGPoint? {
         if event.window != nil {
-            cursorPosition = event.locationInWindow
-            return
+            return event.locationInWindow
         }
-        guard let window = self.window else { return }
-        let locationInScreen = NSRect(origin: event.locationInWindow, size: .zero)
-        let locationInWindow = window.convertFromScreen(locationInScreen).origin
-        cursorPosition = locationInWindow
+        guard let window = self.window else { return nil }
+        let locationInWindow = window.convertPoint(fromScreen: event.locationInWindow)
+        return locationInWindow
     }
 }
 
@@ -68,6 +63,7 @@ struct EyeView: View {
             let pupilPosition = calculatePupilPosition(cursorPosition: tracker.cursorPosition, eyeFrame: geometry.frame(in: .global), maxPupilOffset: maxPupilOffset)
             // Create eye and pupil views
             Circle() // Eye
+                .fill(Color.white)
                 .frame(width: geometry.size.width, height: geometry.size.height)
                 .overlay(
                     Circle() // Pupil
@@ -81,7 +77,14 @@ struct EyeView: View {
 }
 
 struct ContentView: View {
-    var tracker = CursorTracker(window: NSApplication.shared.windows.first)
+    var window: NSWindow
+    var tracker: CursorTracker
+    
+    init(window: NSWindow) {
+        self.window = window
+        self.tracker = CursorTracker(window: window)
+    }
+    
     var body: some View {
         HStack {
             EyeView(tracker: tracker)

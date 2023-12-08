@@ -9,34 +9,6 @@ import SwiftUI
 import SwiftData
 import AppKit
 
-
-@main
-struct clippyApp: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-
-    @State private var dragAmount = CGSize.zero
-
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
-
-    var body: some Scene {
-        Settings {
-            ContentView()
-        }
-        .modelContainer(sharedModelContainer)
-    }
-}
-
 class DraggableHostingView<Content>: NSHostingView<Content> where Content: View {
     override var mouseDownCanMoveWindow: Bool {
         return NSEvent.modifierFlags.contains(.command)
@@ -44,7 +16,6 @@ class DraggableHostingView<Content>: NSHostingView<Content> where Content: View 
 }
 
 class InspectorPanel : NSPanel {
-
   override func awakeFromNib() {
     super.awakeFromNib()
     becomesKeyOnlyIfNeeded = true // REPLACES THE BELOW
@@ -65,14 +36,39 @@ class InspectorPanel : NSPanel {
 class AppDelegate: NSObject, NSApplicationDelegate {
     var window: InspectorPanel!
 
+    var statusBarItem: NSStatusItem?
+
+    @objc func option1() {
+        // Handle the action for the first menu item
+    }
+
+    @objc func quit() {
+        NSApplication.shared.terminate(self)
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+        statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+
+        // Set the icon
+        if let button = statusBarItem?.button {
+            button.image = NSImage(named: NSImage.infoName)
+        }
+
+        // Create the menu
+        let menu = NSMenu()
+        menu.addItem(NSMenuItem(title: "Option 1", action: #selector(option1), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q"))
+
+        statusBarItem?.menu = menu
+
+
         NSApplication.shared.setActivationPolicy(.accessory)
         guard let screenSize = NSScreen.main?.frame.size else { return }
 
 
         // Calculate top right corner position
         let windowX = screenSize.width - 200 - 10
-        let windowY = 0.0
+        let windowY = 0.0 + 10
 
 
         // Create the window with desired dimensions and style
@@ -100,12 +96,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Set the ContentView as the content view of the window
         // window.contentView = NSHostingView(rootView: ContentView())
-        window.contentView = DraggableHostingView(rootView: ContentView())
-
-        // Display the window
-        window.makeKeyAndOrderFront(nil)
-        window.orderFrontRegardless()
+        window.contentView = DraggableHostingView(rootView: ContentView(window: window))
         window.isOpaque = false
         window.backgroundColor = .clear
+
+        // Display the window
+        window.orderFrontRegardless()
     }
 }
+
+let appDelegate = AppDelegate()
+let application = NSApplication.shared
+application.delegate = appDelegate
+
+let _ = NSApplicationMain(CommandLine.argc, CommandLine.unsafeArgv)
