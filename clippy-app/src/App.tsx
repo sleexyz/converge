@@ -1,9 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/tauri";
 import "./App.css";
+import { useGlobalShortcut } from "./use_global_shortcut";
 
 function App() {
+  useGlobalShortcut();
+  useEffect(() => {
+    invoke("init_main_window");
+  
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        invoke("hide_main_window");
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    // Cleanup function to remove the event listener when the component unmounts
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
 

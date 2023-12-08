@@ -16,6 +16,9 @@
     "macOSPrivateApi": true,
     "allowlist": {
       "all": false,
+      "globalShortcut": {
+        "all": true
+      },
       "shell": {
         "all": false,
         "open": true
@@ -47,7 +50,7 @@
         "transparent": true,
         "alwaysOnTop": true,
         "acceptFirstMouse": true,
-        "decorations": true,
+        "decorations": false,
         "title": "",
         "width": 800,
         "height": 600

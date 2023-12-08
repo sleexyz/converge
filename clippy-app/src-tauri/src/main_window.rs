@@ -113,7 +113,6 @@ static PANEL_LABEL: &str = "main";
 #[tauri::command]
 pub fn init_main_window(app_handle: AppHandle<Wry>, window: Window<Wry>) {
     INIT.call_once(|| {
-        println!("{}", window.label());
         set_state!(app_handle, panel, Some(create_main_window_panel(&window)));
     });
 }
