@@ -8,14 +8,14 @@ export function useGlobalShortcut() {
 
   useEffect(() => {
     register(hotkey, () => {
-      invoke("toggle_main_window");
+      invoke("toggle_panel");
     });
 
     const unlisten = listen("setting_window:close", async () => {
       // hack: re-register hotkey on setting window close
       await unregister(hotkey);
       await register(hotkey, () => {
-        invoke("toggle_main_window");
+        invoke("toggle_panel");
       });
     });
 
