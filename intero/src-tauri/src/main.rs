@@ -3,13 +3,17 @@
 
 mod main_window;
 mod window_ext;
+mod panel_ext;
 
+use cocoa::appkit::NSWindowStyleMask;
 use tauri::{AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, Window, Wry};
 use tauri_plugin_autostart::MacosLauncher;
 // use window_ext::WindowExt as _;
-use tauri_nspanel::{panel_delegate, ManagerExt, WindowExt};
+use tauri_nspanel::{panel_delegate, ManagerExt, WindowExt };
 
 use std::process;
+
+use panel_ext::PanelExt as _;
 
 
 fn make_tray() -> SystemTray {
@@ -60,7 +64,7 @@ fn main() {
         .expect("error while running tauri application");
 }
 
-// #[allow(non_upper_case_globals)]
+#[allow(non_upper_case_globals)]
 const NSWindowStyleMaskNonActivatingPanel: i32 = 1 << 7;
 
 fn init(window: Window<Wry>) {
@@ -87,7 +91,8 @@ fn init(window: Window<Wry>) {
   
     panel.set_delegate(delegate);
 
-    panel.set_style_mask(NSWindowStyleMaskNonActivatingPanel);
+    panel.set_style_mask(NSWindowStyleMaskNonActivatingPanel | 0);
+    panel.set_becomes_key_only_if_needed(true);
   }
   
   #[tauri::command]
@@ -97,7 +102,7 @@ fn init(window: Window<Wry>) {
 
   fn open_panel(handle: &AppHandle<Wry>) {
     let panel = handle.get_panel("main").unwrap();
-    panel.show();
+    panel.show_without_making_key_window();
   }
   
   #[tauri::command]
@@ -115,7 +120,6 @@ fn init(window: Window<Wry>) {
 
 #[tauri::command]
 fn toggle_panel(app_handle: AppHandle<Wry>) {
-    println!("toggle_panel");
     let panel = app_handle.get_panel("main").unwrap();
     if panel.is_visible() {
         hide_panel(app_handle);
