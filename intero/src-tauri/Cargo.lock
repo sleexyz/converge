@@ -2930,7 +2930,7 @@ dependencies = [
 [[package]]
 name = "tauri-nspanel"
 version = "0.0.0"
-source = "git+https://github.com/ahkohd/tauri-nspanel#dee80b8ea6922b73bf88c680ce3a598ecc96f4ec"
+source = "git+https://github.com/sleexyz/tauri-nspanel-no-key-window?rev=916288b#916288bb08b85c304d0f294d9fe7916c03885f39"
 dependencies = [
  "block",
  "cocoa 0.24.1",
