@@ -5,7 +5,7 @@ mod main_window;
 mod window_ext;
 mod panel_ext;
 
-use cocoa::appkit::NSWindowStyleMask;
+use main_window::position_window_at_the_center_of_the_monitor_with_cursor;
 use tauri::{AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, Window, Wry};
 use tauri_plugin_autostart::MacosLauncher;
 // use window_ext::WindowExt as _;
@@ -51,7 +51,6 @@ fn main() {
             close_panel,
             toggle_panel
         ])
-        // .manage(main_window::State::default())
         .setup(move |app| {
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             let window = app.get_window("main").unwrap();
@@ -101,6 +100,8 @@ fn init(window: Window<Wry>) {
   }
 
   fn open_panel(handle: &AppHandle<Wry>) {
+    let window = handle.get_window("main").unwrap();
+    position_window_at_the_center_of_the_monitor_with_cursor(&window);
     let panel = handle.get_panel("main").unwrap();
     panel.show_without_making_key_window();
   }
