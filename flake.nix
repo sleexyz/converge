@@ -13,34 +13,20 @@
             ]; 
           };
 
-          # From https://github.com/loophp/rust-shell
-          rustInfo =
-            with pkgs;
-            let
-              rust = rust-bin.stable.latest.default.override {
-                extensions = [ "rust-src" ];
-                # From https://gist.github.com/oxalica/310d9a1ba69fd10123f2d70dc6e00f0b
-                # targets = [ "wasm32-unknown-unknown" ];
-              };
-            in
-            {
-              # From https://discourse.nixos.org/t/rust-src-not-found-and-other-misadventures-of-developing-rust-on-nixos/11570/11
-              path = "${rust}/lib/rustlib/src/rust/library";
-              drvs = [
-                rust-analyzer
-                rust
-              ];
-            };
+          rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./toolchain.toml;
         in
         with pkgs; {
           devShell = mkShell {
             name = "devEnvironment";
-            RUST_SRC_PATH = "${rustInfo.path}";
+            RUST_SRC_PATH = "${rustToolchain}/lib/rustlib/src/rust/library";
+
             nativeBuildInputs = [
               cowsay
               # Tauri deps
               bun
-              rustInfo.drvs
+              rustToolchain
+              rust-analyzer-unwrapped
+              # rustInfo.drvs
               libiconv
               (pkgs.darwin.apple_sdk.frameworks.Carbon)
               (pkgs.darwin.apple_sdk.frameworks.WebKit)

@@ -1,7 +1,7 @@
-use cocoa::base::{id, nil, BOOL, NO, YES};
+use cocoa::base::{BOOL, NO};
 use tauri_nspanel::raw_nspanel::RawNSPanel;
 use objc::{msg_send, sel, sel_impl,
-    runtime::{self, Class, Object, Sel},
+    runtime::{Object, Sel},
 };
 
 
