@@ -4,7 +4,7 @@ import "./App.css";
 import { useGlobalShortcut } from "./use_global_shortcut";
 import { format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
-import {intervalToDuration, formatDuration} from 'date-fns';
+import { intervalToDuration, formatDuration } from 'date-fns';
 
 interface AppState {
   [id: string]: Activity;
@@ -64,16 +64,28 @@ function App() {
 
   const [debug, setDebug] = useState(false);
 
+  const [activeActivityId, activeActivity] = (() => {
+    const id = Object.keys(state)[Object.keys(state).length - 1];
+    const activity = state[id];
+    if (activity.stop) {
+      return [undefined, undefined];
+    }
+    return [id, activity];
+  })();
+
   const [showCreateActivity, setShowCreateActivity] = useState(false);
   console.log(showCreateActivity);
 
   return (
     <>
       <div id="container" className="p-10 flex flex-col justify-start text-left">
-
-        {!showCreateActivity && <button className="mt-16 px-4 py-2 text-2xl rounded-md shadow-sm opacity-50 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" onClick={() => {
+        {!showCreateActivity && activeActivity && !activeActivity.stop && <button className="mt-16 px-4 py-2 text-2xl rounded-md shadow-sm opacity-50 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" onClick={() => {
+          endCurrentActivity();
+        }}>Stop</button>}
+        {!showCreateActivity && (!activeActivity || (activeActivity && activeActivity.stop)) && <button className="mt-16 px-4 py-2 text-2xl rounded-md shadow-sm opacity-50 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" onClick={() => {
           setShowCreateActivity(true);
         }}>New activity</button>}
+
         <div id="anchor"></div>
 
         {showCreateActivity && (() => {
@@ -98,10 +110,9 @@ function App() {
         }
 
         {Object.entries(state).reverse().map(([id, activity], i) => {
-          const current = i === 0; // because reversed
           return <ActivityView
-            className={current ? "my-36" : undefined}
-            key={id} id={id} activity={activity} newActivity={current} setActivity={
+            className={id === activeActivityId ? "my-36" : ""}
+            key={id} id={id} activity={activity} newActivity={false} setActivity={
               (activity: Activity) => {
                 setState((state) => {
                   return {
@@ -123,7 +134,7 @@ function App() {
 
       </div>
 
-      {debug && <div className="fixed right-0 p-8 top-0 bg-slate-500 bg-opacity-80 rounded-md overflow-auto">
+      {debug && <div className="fixed max-h-screen right-0 p-8 top-0 bg-slate-500 bg-opacity-80 rounded-md overflow-auto">
         <pre>
           {JSON.stringify(state, null, 2)}
         </pre>
@@ -209,7 +220,7 @@ function ActivityView({ className, newActivity, activity, setActivity, deleteAct
   }, [deadline]);
 
   // Seconds remaining:
-  const timeSpentMillis = start ? ((Date.now() - start.getTime()) ) : 0;
+  const timeSpentMillis = start ? ((Date.now() - start.getTime())) : 0;
   const formattedStartDate = start ? format(start, 'h:mm a') : '';
 
   const ref = useRef<HTMLDivElement>(null);
@@ -232,7 +243,7 @@ function ActivityView({ className, newActivity, activity, setActivity, deleteAct
       </div>
       <input
         type="text"
-        placeholder="What are you single-tasking on right now?"
+        placeholder="What are you committing to single-tasking on right now?"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
