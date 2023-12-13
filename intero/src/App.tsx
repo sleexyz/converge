@@ -1,61 +1,18 @@
 import { useState, useEffect, useRef } from "react";
-import { invoke } from "@tauri-apps/api/tauri";
 import "./App.css";
 import { useGlobalShortcut } from "./use_global_shortcut";
 import { format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 import { intervalToDuration, formatDuration } from 'date-fns';
+import { getActiveActivity, loadState } from "./state";
 
-interface AppState {
-  [id: string]: Activity;
-}
-
-interface Activity {
-  value?: string;
-  start?: Date;
-  stop?: Date;
-  deadline?: Date;
-}
 
 function App() {
   useGlobalShortcut();
 
-
-  const initialState: AppState = (() => {
-    const str = localStorage.getItem('state');
-    function makeFallbackState() {
-      return {};
-    }
-    if (!str) {
-      return makeFallbackState();
-    }
-    try {
-      const obj = JSON.parse(str);
-      let outputObj: AppState = {};
-      for (let [key, value] of Object.entries(obj)) {
-        outputObj[key] = parseActivity(value as Activity);
-      }
-
-      if (Object.keys(outputObj).length === 0) {
-        return makeFallbackState();
-      }
-
-      function parseActivity(obj: Activity) {
-        return {
-          start: obj.start ? new Date(obj.start) : undefined,
-          stop: obj.stop ? new Date(obj.stop) : undefined,
-          value: obj.value,
-          deadline: obj.deadline ? new Date(obj.deadline) : undefined,
-        };
-      }
-      return outputObj;
-    } catch (e) {
-      return makeFallbackState();
-    }
-  })();
-
-
-  const [state, setState] = useState(initialState);
+  const [state, setState] = useState(() => {
+    return loadState();
+  });
 
   useEffect(() => {
     localStorage.setItem('state', JSON.stringify(state));
@@ -64,21 +21,14 @@ function App() {
 
   const [debug, setDebug] = useState(false);
 
-  const [activeActivityId, activeActivity] = (() => {
-    const id = Object.keys(state)[Object.keys(state).length - 1];
-    const activity = state[id];
-    if (activity.stop) {
-      return [undefined, undefined];
-    }
-    return [id, activity];
-  })();
+  const [activeActivityId, activeActivity] = getActiveActivity(state)
 
   const [showCreateActivity, setShowCreateActivity] = useState(false);
   console.log(showCreateActivity);
 
   return (
     <>
-      <div id="container" className="p-10 flex flex-col justify-start text-left">
+      <div id="container" className="p-10 flex flex-col justify-start text-left rounded-xl">
         {!showCreateActivity && activeActivity && !activeActivity.stop && <button className="mt-16 px-4 py-2 text-2xl rounded-md shadow-sm opacity-50 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" onClick={() => {
           endCurrentActivity();
         }}>Stop</button>}
@@ -174,9 +124,11 @@ function ActivityView({ className, newActivity, activity, setActivity, deleteAct
       return;
     }
     if (activity.stop) {
+      save();
       return;
     }
     if (start) {
+      save();
       return;
     }
     setStart(new Date());
@@ -184,18 +136,23 @@ function ActivityView({ className, newActivity, activity, setActivity, deleteAct
   }
 
   const initialRender = useRef(true);
+
   useEffect(() => {
     if (initialRender.current) {
       initialRender.current = false;
       return;
     }
+    save()
+  }, [start, deadline])
+
+  function save() {
     setActivity({
       ...activity,
       value: value,
       start,
       deadline,
     });
-  }, [start, deadline])
+  }
 
 
   const [_interval, setInterval] = useState<number | null>(null);
@@ -247,6 +204,7 @@ function ActivityView({ className, newActivity, activity, setActivity, deleteAct
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
+        onBlur={save}
         className="mt-3 px-4 py-2 text-2xl border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 flex-1"
       />
       {!activity.stop && deadline && <p className="mt-8">{timeSpentString}</p>}

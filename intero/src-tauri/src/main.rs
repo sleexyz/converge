@@ -4,16 +4,16 @@
 mod main_window;
 mod window_ext;
 mod panel_ext;
+mod widget;
 
 use main_window::position_window_at_the_center_of_the_monitor_with_cursor;
-use tauri::{AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, Window, Wry};
+use tauri::{AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, Wry};
 use tauri_plugin_autostart::MacosLauncher;
-// use window_ext::WindowExt as _;
-use tauri_nspanel::{panel_delegate, ManagerExt, WindowExt };
+use tauri_nspanel::ManagerExt;
 
 use std::process;
 
-use panel_ext::PanelExt as _;
+use panel_ext::PanelExt;
 
 
 fn make_tray() -> SystemTray {
@@ -49,13 +49,15 @@ fn main() {
             show_panel,
             hide_panel,
             close_panel,
-            toggle_panel
+            toggle_panel,
+            widget::show_widget_window,
         ])
         .setup(move |app| {
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             let window = app.get_window("main").unwrap();
             // window.set_transparent_titlebar(true, true);
-            init(window);
+            panel_ext::init_as_panel(window);
+            widget::show_widget_window(app.app_handle());
 
             Ok(())
         })
@@ -63,61 +65,31 @@ fn main() {
         .expect("error while running tauri application");
 }
 
-#[allow(non_upper_case_globals)]
-const NSWindowStyleMaskNonActivatingPanel: i32 = 1 << 7;
+#[tauri::command]
+fn show_panel(handle: AppHandle<Wry>) {
+  open_panel(&handle);
+}
 
-fn init(window: Window<Wry>) {
-    let panel = window.to_panel().unwrap();
-  
-    let delegate = panel_delegate!(MyPanelDelegate {
-      window_did_become_key,
-      window_did_resign_key
-    });
-  
-    let handle = window.app_handle();
-    delegate.set_listener(Box::new(move |delegate_name: String| {
-      match delegate_name.as_str() {
-        "window_did_become_key" => {
-          let app_name = handle.package_info().name.to_owned();
-          println!("[info]: {:?} panel becomes key window!", app_name);
-        }
-        "window_did_resign_key" => {
-          println!("[info]: panel resigned from key window!");
-        }
-        _ => (),
-      }
-    }));
-  
-    panel.set_delegate(delegate);
+fn open_panel(handle: &AppHandle<Wry>) {
+  let window = handle.get_window("main").unwrap();
+  position_window_at_the_center_of_the_monitor_with_cursor(&window);
+  let panel = handle.get_panel("main").unwrap();
+  panel.show_without_making_key_window();
+  panel.set_key_window_able2(true);
+}
 
-    panel.set_style_mask(NSWindowStyleMaskNonActivatingPanel | 0);
-    panel.set_becomes_key_only_if_needed(true);
-  }
-  
-  #[tauri::command]
-  fn show_panel(handle: AppHandle<Wry>) {
-    open_panel(&handle);
-  }
+#[tauri::command]
+fn hide_panel(handle: AppHandle<Wry>) {
+  let panel = handle.get_panel("main").unwrap();
+  panel.order_out(None);
+}
 
-  fn open_panel(handle: &AppHandle<Wry>) {
-    let window = handle.get_window("main").unwrap();
-    position_window_at_the_center_of_the_monitor_with_cursor(&window);
-    let panel = handle.get_panel("main").unwrap();
-    panel.show_without_making_key_window();
-  }
-  
-  #[tauri::command]
-  fn hide_panel(handle: AppHandle<Wry>) {
-    let panel = handle.get_panel("main").unwrap();
-    panel.order_out(None);
-  }
-  
-  #[tauri::command]
-  fn close_panel(handle: AppHandle<Wry>) {
-    let panel = handle.get_panel("main").unwrap();
-    panel.released_when_closed(true);
-    panel.close();
-  }
+#[tauri::command]
+fn close_panel(handle: AppHandle<Wry>) {
+  let panel = handle.get_panel("main").unwrap();
+  panel.released_when_closed(true);
+  panel.close();
+}
 
 #[tauri::command]
 fn toggle_panel(app_handle: AppHandle<Wry>) {

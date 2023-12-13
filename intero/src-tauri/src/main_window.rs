@@ -2,12 +2,12 @@
 // use std::mem;
 
 // use objc_id::{Id, ShareId};
-use tauri::{PhysicalPosition, PhysicalSize, Window, Wry};
+use tauri::{PhysicalPosition, PhysicalSize, LogicalSize, Window, Wry, LogicalPosition};
 
 use cocoa::{
     appkit::{CGFloat, NSWindow},
     base::{id, nil, BOOL, NO, YES},
-    foundation::{NSPoint, NSRect},
+    foundation::{NSPoint, NSRect, NSSize},
 };
 use objc::{
     class,
@@ -169,6 +169,30 @@ pub fn position_window_at_the_center_of_the_monitor_with_cursor(window: &Window<
         let _: () = unsafe { msg_send![handle, setFrame: rect display: YES] };
     }
 }
+
+pub fn position_window<F>(window: &Window<Wry>, callback: F)
+where
+    F: Fn(LogicalPosition<f64>, LogicalSize<f64>, NSSize) -> NSPoint,
+{
+    if let Some(monitor) = get_monitor_with_cursor() {
+        let display_size = monitor.size.to_logical::<f64>(monitor.scale_factor);
+        let display_pos = monitor.position.to_logical::<f64>(monitor.scale_factor);
+
+        let handle: id = window.ns_window().unwrap() as _;
+        let win_frame: NSRect = unsafe { handle.frame() };
+        log::debug!(
+            "display_pos.y: {}, display_size.height: {}",
+            display_pos.y,
+            display_size.height
+        );
+        let rect = NSRect {
+            origin: callback(display_pos, display_size, win_frame.size),
+            size: win_frame.size,
+        };
+        let _: () = unsafe { msg_send![handle, setFrame: rect display: YES] };
+    }
+}
+
 
 struct Monitor {
     #[allow(dead_code)]

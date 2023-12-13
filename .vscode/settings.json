@@ -1,4 +1,15 @@
 {
     "rust-analyzer.procMacro.enable": true,
     "rust-analyzer.cargo.sysroot": "discover"
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/target": true,
+        "**/node_modules": true,
+        ".cargo": true,
+    }
 }
