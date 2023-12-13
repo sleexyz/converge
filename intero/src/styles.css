@@ -9,7 +9,7 @@
   font-weight: 400;
 
   color: #0f0f0f;
-  background: rgba(255, 255, 255, 0.98);
+  background: transparent;
 
 
   font-synthesis: none;
@@ -87,7 +87,7 @@ button {
 @media (prefers-color-scheme: dark) {
   :root {
     color: #f6f6f6;
-    background-color: rgba(0, 0, 0, 0.98);
+    background-color: transparent;
   }
 
   a:hover {
