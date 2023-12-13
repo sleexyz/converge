@@ -16,6 +16,9 @@
     "macOSPrivateApi": true,
     "allowlist": {
       "all": false,
+      "dialog": {
+        "all": true
+      },
       "globalShortcut": {
         "all": true
       },
