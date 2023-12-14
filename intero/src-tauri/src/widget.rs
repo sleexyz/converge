@@ -1,9 +1,9 @@
 // Panel
-use crate::panel_ext::{init_as_panel, PanelExt};
+use crate::panel_ext::init_as_panel;
 use crate::main_window::position_window;
 use tauri::{AppHandle, Manager, Wry};
-use cocoa::foundation::NSPoint;
 use tauri_nspanel::ManagerExt;
+use cocoa::foundation::NSPoint;
 
 #[tauri::command]
 pub fn show_widget_window(app: AppHandle) {
@@ -34,6 +34,12 @@ pub fn open_widget_window(app: &AppHandle) {
     .ok();
 
     if let Some(window) = widget_window {
+        // {
+        //     let window = window.ns_window().unwrap() as id;
+        //     unsafe {
+        //         window.contentView().setAlphaValue_(1.0);
+        //     }
+        // }
         // let _ = window.set_ignore_cursor_events(true);
         // let _ = window.show().ok();
         position_window(&window, |display_pos, display_size, win_frame_size| {
