@@ -1,10 +1,10 @@
 import * as PIXI from 'pixi.js';
+import { Stage } from '@pixi/react';
 import { Live2DModel } from 'pixi-live2d-display';
-import { useRef } from "react";
-import { useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 
-window.PIXI = PIXI;
+(window as any).PIXI = PIXI;
 
 interface MouseMoved {
     x: number;
@@ -16,7 +16,9 @@ interface MouseMoved {
 }
 
 export function XEyes() {
-    const modelRef = useRef<Live2DModel>(null);
+    const modelRef = useRef<Live2DModel | null>(null);
+
+    const [inWindow, setInWindow] = useState(false);
 
     useEffect(() => {
         const unlistenPromise = listen('mouse-moved', (event) => {
@@ -27,6 +29,13 @@ export function XEyes() {
                 let model = modelRef.current;
                 model.focus(x, y);
             }
+
+            const cursorInWindow = x >= 0 && x <= mouseMoved.window_width && y >= 0 && y <= mouseMoved.window_height;
+            if (cursorInWindow) {
+                setInWindow(true);
+            } else {
+                setInWindow(false);
+            }
         });
         return () => {
             unlistenPromise.then((unlisten) => {
@@ -36,14 +45,7 @@ export function XEyes() {
     }, []);
 
 
-    const canvasRef = async (canvas: HTMLCanvasElement) => {
-        const app = new PIXI.Application({
-            view: canvas,
-            resizeTo: window,
-            backgroundAlpha: 0,
-            backgroundColor: 0x000000,
-        });
-
+    const onMount = async (app: PIXI.Application) => {
         // let config = { url: "https://cdn.jsdelivr.net/gh/guansss/pixi-live2d-display/test/assets/haru/haru_greeter_t03.model3.json", scale: 0.4 };
         // let config = { url: "https://cdn.jsdelivr.net/gh/guansss/pixi-live2d-display/test/assets/shizuku/shizuku.model.json", scale: 0.4 };
         let config = { url: "/assets/model21.json", scale: 1 };
@@ -58,5 +60,19 @@ export function XEyes() {
         modelRef.current = model2;
     };
 
-    return (<canvas ref={canvasRef} />);
+    let classes = "transition-opacity duration-1000";
+    if (inWindow) {
+        classes += " opacity-10";
+    } else {
+        classes += " opacity-100";
+    }
+
+    return (
+        <Stage
+            className={classes}
+            options={{ resizeTo: window, backgroundAlpha: 0 }}
+            onMount={onMount}
+        >
+        </Stage>
+    );
 }
