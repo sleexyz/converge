@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { getActiveActivity, loadState } from "./state";
 import "./WidgetView.css";
-import { format } from 'date-fns';
+import { XEyes } from "./XEyes";
+// import { format } from 'date-fns';
 
 export function WidgetView() {
     const [state, setState] = useState(() => {
@@ -9,7 +10,7 @@ export function WidgetView() {
     });
 
     useEffect(() => {
-        function listener(e: any) {
+        function listener() {
             setState(loadState());
         }
         window.addEventListener("storage", listener);
@@ -23,15 +24,15 @@ export function WidgetView() {
         return <></>
     }
 
-    const start = activity.start;
-
-    const formattedStartDate = start ? format(start, 'h:mm a') : '';
+    // const start = activity.start;
+    // const formattedStartDate = start ? format(start, 'h:mm a') : '';
 
     return (
-        <div id="widget-container" className="rounded-xl h-screen flex items-center justify-center">
-            <div
-                className="text-xl"
-            >{activity.value}</div>
-        </div>
+        // <div id="widget-container" className="rounded-xl h-screen flex items-center justify-center">
+        //     <div
+        //         className="text-xl"
+        //     >{activity.value}</div>
+            <XEyes />
+        // </div>
     );
 }

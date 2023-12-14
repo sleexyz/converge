@@ -7,9 +7,14 @@ mod panel_ext;
 mod widget;
 
 use main_window::position_window_at_the_center_of_the_monitor_with_cursor;
-use tauri::{AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, Wry};
+use tauri::{App, AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, Wry};
 use tauri_plugin_autostart::MacosLauncher;
 use tauri_nspanel::ManagerExt;
+use block::ConcreteBlock;
+use cocoa::appkit::NSEventMask;
+use objc::{class, msg_send, sel, sel_impl};
+use cocoa::base::{id, nil};
+use cocoa::foundation::{NSPoint, NSRect};
 
 use std::process;
 
@@ -58,6 +63,7 @@ fn main() {
             // window.set_transparent_titlebar(true, true);
             panel_ext::init_as_panel(window);
             widget::show_widget_window(app.app_handle());
+            track_mouse(&app.app_handle());
 
             Ok(())
         })
@@ -98,5 +104,49 @@ fn toggle_panel(app_handle: AppHandle<Wry>) {
         hide_panel(app_handle);
     } else {
         show_panel(app_handle);
+    }
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+struct MouseMoved {
+    x: f64,
+    y: f64,
+    // TODO: move this to different event, changes less often.
+    window_x: f64,
+    window_y: f64,
+    window_width: f64,
+    window_height: f64,
+}
+
+fn track_mouse(app: &AppHandle) {
+    let widget = app.get_window("widget").unwrap();
+    let widget_window = widget.ns_window().unwrap() as id;
+    unsafe {
+        let block2 = ConcreteBlock::new(move |event: id| {
+            let event_location: NSPoint = msg_send![&*event, locationInWindow];
+            let window: id = msg_send![&*event, window];
+            let screen_location: NSPoint = if window == nil {
+                // println!("Mouse moved to {},{}", event_location.x as i32, event_location.y as i32);
+                event_location
+            } else {
+                let location: NSPoint = msg_send![window, convertPointToScreen:event_location];
+                // println!("Mouse moved to {},{}", location.x as i32, location.y as i32);
+                location
+            };
+            let frame: NSRect = msg_send![widget_window, frame];
+
+            widget.emit("mouse-moved", MouseMoved { 
+                x: screen_location.x, 
+                y: screen_location.y,
+                window_x: frame.origin.x as f64,
+                window_y: frame.origin.y as f64,
+                window_width: frame.size.width as f64,
+                window_height: frame.size.height as f64,
+            }).unwrap();
+        });
+
+        let mask = NSEventMask::NSMouseMovedMask;
+
+        let _: () = msg_send![class!(NSEvent), addGlobalMonitorForEventsMatchingMask:mask handler:block2];
     }
 }

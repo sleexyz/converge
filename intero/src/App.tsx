@@ -4,7 +4,7 @@ import { useGlobalShortcut } from "./use_global_shortcut";
 import { format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 import { intervalToDuration, formatDuration } from 'date-fns';
-import { getActiveActivity, loadState } from "./state";
+import { Activity, getActiveActivity, loadState } from "./state";
 
 
 function App() {
@@ -59,7 +59,7 @@ function App() {
         })()
         }
 
-        {Object.entries(state).reverse().map(([id, activity], i) => {
+        {Object.entries(state).reverse().map(([id, activity]) => {
           return <ActivityView
             className={id === activeActivityId ? "my-36" : ""}
             key={id} id={id} activity={activity} newActivity={false} setActivity={

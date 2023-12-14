@@ -314,6 +314,7 @@ dependencies = [
 name = "clippy-app"
 version = "0.0.0"
 dependencies = [
+ "block",
  "cocoa 0.25.0",
  "log",
  "objc",
