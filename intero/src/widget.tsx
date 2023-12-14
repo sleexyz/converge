@@ -1,4 +1,4 @@
-import ReactDOM from "react-dom/client";
+import * as ReactDOM from "react-dom/client";
 import "./widget_styles.css";
 import { WidgetView } from "./WidgetView";
 
