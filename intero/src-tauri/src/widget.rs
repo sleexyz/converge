@@ -29,7 +29,7 @@ pub fn open_widget_window(app: &AppHandle) {
     .always_on_top(true)
     .visible(false)
     .position(0.0, 0.0)
-    .inner_size(600.0, 100.0)
+    .inner_size(600.0, 600.0)
     .build()
     .ok();
 
@@ -40,7 +40,7 @@ pub fn open_widget_window(app: &AppHandle) {
         //         window.contentView().setAlphaValue_(1.0);
         //     }
         // }
-        // let _ = window.set_ignore_cursor_events(true);
+        let _ = window.set_ignore_cursor_events(true);
         // let _ = window.show().ok();
         position_window(&window, |display_pos, display_size, win_frame_size| {
             NSPoint {

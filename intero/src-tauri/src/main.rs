@@ -7,7 +7,7 @@ mod panel_ext;
 mod widget;
 
 use main_window::position_window_at_the_center_of_the_monitor_with_cursor;
-use tauri::{App, AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, Wry};
+use tauri::{AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, Wry};
 use tauri_plugin_autostart::MacosLauncher;
 use tauri_nspanel::ManagerExt;
 use block::ConcreteBlock;
@@ -17,8 +17,6 @@ use cocoa::base::{id, nil};
 use cocoa::foundation::{NSPoint, NSRect};
 
 use std::process;
-
-use panel_ext::PanelExt;
 
 
 fn make_tray() -> SystemTray {
@@ -80,7 +78,7 @@ fn open_panel(handle: &AppHandle<Wry>) {
   let window = handle.get_window("main").unwrap();
   position_window_at_the_center_of_the_monitor_with_cursor(&window);
   let panel = handle.get_panel("main").unwrap();
-  panel.show_without_making_key_window();
+  panel.show();
   panel.set_key_window_able2(true);
 }
 
