@@ -29,11 +29,13 @@ pub fn open_widget_window(app: &AppHandle) {
     .always_on_top(true)
     .visible(false)
     .position(0.0, 0.0)
-    .inner_size(600.0, 600.0)
+    .inner_size(700.0, 600.0)
     .build()
     .ok();
 
     if let Some(window) = widget_window {
+        // window.with_webview(move |webview| {
+        // });
         // {
         //     let window = window.ns_window().unwrap() as id;
         //     unsafe {

@@ -10,6 +10,8 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@pixi/filter-advanced-bloom": "^5.1.1",
+    "@pixi/filter-crt": "^5.1.1",
     "@pixi/react": "^7.1.1",
     "@tauri-apps/api": "^1.5.1",
     "@types/uuid": "^9.0.7",
