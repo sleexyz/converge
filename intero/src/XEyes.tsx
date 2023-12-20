@@ -3,11 +3,8 @@ import { Stage } from '@pixi/react';
 import { Cubism4InternalModel, Live2DModel, clamp } from 'pixi-live2d-display';
 import { useRef, useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
-import { CRTFilter } from '@pixi/filter-crt';
-
-
-
-(window as any).PIXI = PIXI;
+import { TTSSqueak } from './TTS';
+// import { CRTFilter } from '@pixi/filter-crt';
 
 interface MouseMoved {
     x: number;
@@ -16,6 +13,15 @@ interface MouseMoved {
     window_y: number;
     window_width: number;
     window_height: number;
+}
+
+(window as any).PIXI = PIXI;
+
+interface ModelConfig {
+    url: string;
+    scale?: number;
+    x?: number;
+    y?: number;
 }
 
 export function XEyes() {
@@ -57,18 +63,12 @@ export function XEyes() {
 
 
     const onMount = async (app: PIXI.Application) => {
-        const audioContext = new AudioContext();
-        const audio = new Audio("/assets/shizuku/sounds/tapBody_01.mp3");
-        // const audio = new Audio("/assets/sample-4.mp3");
-        AudioManager.play(audio);
-
-
-        // let config = { url: "/assets/girl/model21.json", scale: 1, x: 0  };
-        // let config = { url: "/assets/Pichu/Pichu.model3.json", scale: 0.38, x:20 };
-        // let config = { url: "/assets/shizuku/shizuku.model.json", scale: 0.5, x:100, y:-50 };
+        // let config: ModelConfig = { url: "/assets/girl/model21.json", scale: 1, x: 0  };
+        // let config: ModelConfig = { url: "/assets/Pichu/Pichu.model3.json", scale: 0.38, x:20 };
+        // let config: ModelConfig = { url: "/assets/shizuku/shizuku.model.json", scale: 0.5, x:100, y:-50 };
 
         // // Lip-syncable:
-        let config = { url: "/assets/mao/mao_pro.model3.json", scale: 0.15, x: -50 };
+        let config: ModelConfig = { url: "/assets/mao/mao_pro.model3.json", scale: 0.15, x: -50 };
         // let config = { url: "/assets/haru/haru_greeter_t05.model3.json", scale: 0.4, x: 0 };
 
         const model = await Live2DModel.from(config.url);
@@ -84,15 +84,21 @@ export function XEyes() {
         model.y = config.y || 0;
         modelRef.current = model;
         const internalModel = (model.internalModel as Cubism4InternalModel);
-        if (internalModel.lipSync) {
 
+        const audioContext = new AudioContext();
+
+        // const {source, start} = await ttsOpenai("Today is a wonderful day to build something people love!!!");
+        const {source, start} = await new TTSSqueak(audioContext).speak("Today is a wonderful day to build something people love!!!");
+
+        if (internalModel.lipSync) {
             const analyser = audioContext.createAnalyser();
             analyser.fftSize = 256;
             analyser.minDecibels = -90;
             analyser.maxDecibels = -10;
             analyser.smoothingTimeConstant = 0.85;
 
-            const source = audioContext.createMediaElementSource(audio);
+            // source.start();
+
             source.connect(analyser);
             source.connect(audioContext.destination);
 
@@ -110,6 +116,7 @@ export function XEyes() {
             const lipSyncParameters = internalModel.settings.getLipSyncParameters() || [];
 
             // Function to update the lip-sync parameters
+            // Taken from: https://github.com/guansss/pixi-live2d-display/pull/122
             const updateLipSyncValue = (input: number) => {
                 let value = input;
                 let min_ = 0;
@@ -133,10 +140,10 @@ export function XEyes() {
                 updateLipSyncValue(getVolume());
                 oldUpdateFocus.call(internalModel);
             }
-            // updateLipSyncValue.current = updateLipSyncValueFn;
 
 
             console.log("Lip-sync enabled");
+            start();
         }
     };
 
@@ -156,28 +163,4 @@ export function XEyes() {
         >
         </Stage>
     );
-}
-
-class AudioManager {
-    /**
-     * Plays the sound.
-     * @param audio - An audio element.
-     * @return Promise that resolves when the audio is ready to play, rejects when error occurs.
-     */
-    static play(audio: HTMLAudioElement): Promise<void> {
-        return new Promise((resolve, reject) => {
-            // see https://developers.google.com/web/updates/2017/09/autoplay-policy-changes
-            audio.play()?.catch((e) => {
-                audio.dispatchEvent(new ErrorEvent("error", { error: e }));
-                reject(e);
-            });
-
-            if (audio.readyState === audio.HAVE_ENOUGH_DATA) {
-                resolve();
-            } else {
-                audio.addEventListener("canplaythrough", resolve as () => void);
-            }
-        });
-    }
-
 }

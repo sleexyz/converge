@@ -28,8 +28,9 @@ pub fn open_widget_window(app: &AppHandle) {
     .transparent(true)
     .always_on_top(true)
     .visible(false)
-    .position(0.0, 0.0)
-    .inner_size(700.0, 600.0)
+    // .position(0.0, 0.0)
+    // .inner_size(700.0, 600.0)
+    .inner_size(600.0, 200.0)
     .build()
     .ok();
 
@@ -42,12 +43,13 @@ pub fn open_widget_window(app: &AppHandle) {
         //         window.contentView().setAlphaValue_(1.0);
         //     }
         // }
-        let _ = window.set_ignore_cursor_events(true);
+        // let _ = window.set_ignore_cursor_events(true);
         // let _ = window.show().ok();
         position_window(&window, |display_pos, display_size, win_frame_size| {
             NSPoint {
                 x: (display_pos.x + (display_size.width)) - (win_frame_size.width),
-                y: (display_pos.y), // 160 from the top
+                // y: (display_pos.y + (display_size.height)) - (win_frame_size.height), // 160 from the top
+                y: display_pos.y
             }
         });
         init_as_panel(window);
