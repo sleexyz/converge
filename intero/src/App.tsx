@@ -117,7 +117,6 @@ function App() {
 function ActivityView({ className, newActivity, activity, setActivity, deleteActivity }: { newActivity: boolean, activity: Activity, id: string, setActivity: (activity: Activity) => void, className?: string, deleteActivity: () => void }) {
   const [start, setStart] = useState<Date | undefined>(activity.start);
   const [value, setValue] = useState(activity.value)
-  const [deadline, setDeadline] = useState<Date | undefined>(activity.deadline);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key !== 'Enter') {
@@ -132,7 +131,6 @@ function ActivityView({ className, newActivity, activity, setActivity, deleteAct
       return;
     }
     setStart(new Date());
-    setDeadline(new Date(Date.now() + 15 * 60 * 1000));
   }
 
   const initialRender = useRef(true);
@@ -143,14 +141,13 @@ function ActivityView({ className, newActivity, activity, setActivity, deleteAct
       return;
     }
     save()
-  }, [start, deadline])
+  }, [start])
 
   function save() {
     setActivity({
       ...activity,
       value: value,
       start,
-      deadline,
     });
   }
 
@@ -160,7 +157,6 @@ function ActivityView({ className, newActivity, activity, setActivity, deleteAct
 
   // TODO: clear interval after timer ends.
   useEffect(() => {
-    if (deadline) {
       setInterval(window.setInterval(() => {
         setTick(tick => tick + 1);
       }, 1000));
@@ -173,8 +169,7 @@ function ActivityView({ className, newActivity, activity, setActivity, deleteAct
           return null
         })
       }
-    }
-  }, [deadline]);
+  }, []);
 
   // Seconds remaining:
   const timeSpentMillis = start ? ((Date.now() - start.getTime())) : 0;
@@ -207,7 +202,7 @@ function ActivityView({ className, newActivity, activity, setActivity, deleteAct
         onBlur={save}
         className="mt-3 px-4 py-2 text-2xl border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 flex-1"
       />
-      {!activity.stop && deadline && <p className="mt-8">{timeSpentString}</p>}
+      {!activity.stop && <p className="mt-8">{timeSpentString}</p>}
     </div>
   );
 }
