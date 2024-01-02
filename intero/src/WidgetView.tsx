@@ -45,7 +45,7 @@ export function WidgetView() {
 
   useEffect(() => {
     function listener() {
-      setState(loadState());
+      setState(loadState(activityStateKey));
     }
     window.addEventListener("storage", listener);
     return () => {
