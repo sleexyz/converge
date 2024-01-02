@@ -4,7 +4,7 @@ import "./App.css";
 import { useGlobalShortcut } from "./use_global_shortcut";
 import { v4 as uuidv4 } from "uuid";
 import { ErrorBoundary } from "./ErrorBoundary";
-import {produce, original, Draft} from "immer";
+import { produce, original, Draft } from "immer";
 
 function App() {
   useGlobalShortcut();
@@ -41,12 +41,12 @@ function useLocalStorageState<T>(
   key: string,
   defaultValue: T,
   // run migrations here
-  normalize: (value: T) => T = (value) => value
+  normalizeState: (value: T) => T = (value) => value
 ): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [state, setState] = useState<T>(() => {
     const value = localStorage.getItem(key);
     if (value) {
-      return normalize(JSON.parse(value));
+      return normalizeState(JSON.parse(value));
     }
     return defaultValue;
   });
@@ -58,25 +58,68 @@ function useLocalStorageState<T>(
   return [state, setState];
 }
 
+// Returns topologically sorted nodes.
+function toposort(state: ToposorterState): Id[] {
+  console.log(state);
+  return new Toposort(state.nodes).sort();
+}
+
+class Toposort {
+  visited = new Set<Id>();
+
+  constructor(private readonly nodes: Record<Id, Node>) {}
+
+  // Visit all nodes.
+  // Visit all of a node's children recursively before visiting a node.
+  // Then insertion order should be topologically sorted.
+  sort(): Id[] {
+    for (let key of Object.keys(this.nodes)) {
+      this.visitChildren(key);
+    }
+    return [...this.visited];
+  }
+
+  // DFS
+  private visitChildren(key: Id) {
+    const visted = this.visited.has(key);
+    if (visted) {
+      return;
+    }
+
+    const node = this.nodes[key];
+    if (!node) {
+      return;
+    }
+    for (let childId of node.children) {
+      this.visitChildren(childId);
+    }
+
+    this.visited.add(key);
+  }
+}
+
 function Toposorter() {
   const [state, setState] = useLocalStorageState<ToposorterState>(
     "toposorter",
     {
       nodes: {},
-    }, produce((draft: Draft<ToposorterState>) => {
-      const nodes = original(draft.nodes)!;
-      console.log(nodes);
-      for (let key in Object.keys(nodes)) {
-        if (draft.nodes[key].status === undefined) {
-          draft.nodes[key].status = "active";
-        }
-      }
-    })
+    },
+    produce((_draft: Draft<ToposorterState>) => {})
   );
 
   const [input, setInput] = useState("");
-  const [error, setError] = useState<null|Error>(null);
+  const [error, setError] = useState<null | Error>(null);
 
+  function trySetState(fn: (value: ToposorterState) => ToposorterState) {
+    setState((state) => {
+      try {
+        return fn(state);
+      } catch (e: unknown) {
+        setError(e as Error);
+        return state;
+      }
+    });
+  }
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -95,70 +138,118 @@ function Toposorter() {
         const args = input.split(" ");
         let id = args[1];
         deleteNode(id);
+        normalize();
       } else if (input.startsWith("/child")) {
         const args = input.split(" ");
         let from = args[1];
         let to = args[2];
         addEdge(from, to);
+        normalize();
+      } else if (input.startsWith("/status")) {
+        const args = input.split(" ");
+        let idPrefix = args[1];
+        let status = args[2];
+        setStatus(idPrefix, status);
       } else {
         addNode(input);
-        setInput("");
+        normalize();
       }
-      setError
+      setError(null);
+      setInput("");
     } catch (e: unknown) {
       console.error(e);
       setError(e as Error);
     }
   };
 
-  function deleteNode(idPrefix: string) {
-    setState(produce((draft: Draft<ToposorterState>) => {
-      // reconcile ids
-      let nodes = original(draft.nodes)!;
-      let id = Object.keys(nodes).find((id) => id.startsWith(idPrefix));
-      if (!id) {
-        throw new Error(`Could not find node with prefix ${idPrefix}`);
-      }
-
-      // Delete the node.
-      delete draft.nodes[id];
-
-      // Delete all edges to this node.
-      for (const key of Object.keys(nodes)) { 
-        if (key === id) {
-          continue;
+  function normalize() {
+    trySetState(
+      produce((draft: Draft<ToposorterState>) => {
+        const state = original(draft)!;
+        draft.nodes = {};
+        for (let id of toposort(state)) {
+          draft.nodes[id] = state.nodes[id];
         }
-        const newChildren = nodes[key].children.filter((childId) => childId !== id);
-        draft.nodes[key].children = newChildren;
-      }
-    }));
+      })
+    );
+  }
+
+  function setStatus(idPrefix: string, status: string) {
+    trySetState(
+      produce((draft: Draft<ToposorterState>) => {
+        let nodes = original(draft.nodes)!;
+        let id = Object.keys(nodes).find((id) => id.startsWith(idPrefix));
+        if (!id) {
+          throw new Error(`Could not find node with prefix ${idPrefix}`);
+        }
+        if (status !== "active" && status !== "done") {
+          throw new Error(
+            `Invalid status ${status}. Expected "active" or "done"`
+          );
+        }
+        draft.nodes[id].status = status as "active" | "done";
+      })
+    );
+  }
+
+  function deleteNode(idPrefix: string) {
+    trySetState(
+      produce((draft: Draft<ToposorterState>) => {
+        // reconcile ids
+        let nodes = original(draft.nodes)!;
+        let id = Object.keys(nodes).find((id) => id.startsWith(idPrefix));
+        if (!id) {
+          throw new Error(`Could not find node with prefix ${idPrefix}`);
+        }
+
+        // Delete the node.
+        delete draft.nodes[id];
+
+        // Delete all edges to this node.
+        for (const key of Object.keys(nodes)) {
+          if (key === id) {
+            continue;
+          }
+          const newChildren = nodes[key].children.filter(
+            (childId) => childId !== id
+          );
+          draft.nodes[key].children = newChildren;
+        }
+      })
+    );
   }
 
   function addEdge(fromPrefix: string, toPrefix: string) {
-    setState(produce((draft: Draft<ToposorterState>) => {
-      // reconcile ids
-      let nodes = original(draft.nodes)!;
-      let from = Object.keys(nodes).find((id) => id.startsWith(fromPrefix));
-      let to = Object.keys(nodes).find((id) => id.startsWith(toPrefix));
-      console.log(from, to)
-      if (!from) {
-        throw new Error(`Could not find child node with prefix ${fromPrefix}`);
-      }
-      if (!to) {
-        throw new Error(`Could not find parent node with prefix ${toPrefix}`);
-      }
-      draft.nodes[from].children.push(to);
-    }));
+    trySetState(
+      produce((draft: Draft<ToposorterState>) => {
+        // reconcile ids
+        let nodes = original(draft.nodes)!;
+        let from = Object.keys(nodes).find((id) => id.startsWith(fromPrefix));
+        let to = Object.keys(nodes).find((id) => id.startsWith(toPrefix));
+        console.log(from, to);
+        if (!from) {
+          throw new Error(
+            `Could not find child node with prefix ${fromPrefix}`
+          );
+        }
+        if (!to) {
+          throw new Error(`Could not find parent node with prefix ${toPrefix}`);
+        }
+        draft.nodes[from].children.push(to);
+      })
+    );
   }
 
   function addNode(value: string) {
-    setState(produce((draft: ToposorterState) => {
-      const id = uuidv4();
-      draft.nodes[id] = {
-        value,
-        children: [],
-      }
-    }));
+    trySetState(
+      produce((draft: ToposorterState) => {
+        const id = uuidv4();
+        draft.nodes[id] = {
+          value,
+          children: [],
+        };
+      })
+    );
   }
 
   const handleOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -170,9 +261,10 @@ function Toposorter() {
   return (
     <div className="flex flex-col items-start m-20 space-y-8 p-8 w-[50%] rounded-xl h-[80%] bg-black bg-opacity-90">
       <h1 className="text-4xl text-white">Toposorter</h1>
-      <pre className="flex-1">{JSON.stringify(state, null, 2)}</pre>
-      {error && <pre className="text-red-500">{error.message}</pre>}
-
+      <div className="bg-white bg-opacity-10 flex flex-col-reverse w-full items-end overflow-y-scroll">
+        {error && <pre className="text-red-500">{error.message}</pre>}
+        <pre className="flex-1">{JSON.stringify(state, null, 2)}</pre>
+      </div>
       <input
         ref={inputRef}
         type="text"
