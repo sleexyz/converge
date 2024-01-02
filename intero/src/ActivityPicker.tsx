@@ -104,7 +104,7 @@ export function ActivityPicker() {
               return (
                 <div
                   key={id}
-                  className="flex flex-col justify-between flex-grow flex-shrink-0 h-[400px]"
+                  className="flex flex-col justify-between flex-grow flex-shrink-0 h-[300px]"
                 >
                   {activityView}
                   <button

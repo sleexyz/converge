@@ -18,6 +18,7 @@
     "@xenova/transformers": "^2.11.0",
     "autoprefixer": "^10.4.16",
     "date-fns": "^2.30.0",
+    "immer": "^10.0.3",
     "openai": "^4.22.0",
     "pixi-live2d-display": "0.5.0-beta",
     "pixi.js": "^7.3.2",

@@ -28,6 +28,5 @@ pub fn init_as_panel(window: Window<Wry>) {
   }));
 
   panel.set_delegate(delegate);
-
   panel.set_style_mask(NSWindowStyleMaskNonActivatingPanel | 0);
 }
