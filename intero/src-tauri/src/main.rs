@@ -6,6 +6,7 @@ mod window_ext;
 mod panel_ext;
 mod widget;
 
+use clippy_app::main_window::position_window_fullscreen;
 use main_window::position_window_at_the_center_of_the_monitor_with_cursor;
 use tauri::{AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, Wry};
 use tauri_plugin_autostart::MacosLauncher;
@@ -76,7 +77,7 @@ fn show_panel(handle: AppHandle<Wry>) {
 
 fn open_panel(handle: &AppHandle<Wry>) {
   let window = handle.get_window("main").unwrap();
-  position_window_at_the_center_of_the_monitor_with_cursor(&window);
+  position_window_fullscreen(&window, 0.8);
   let panel = handle.get_panel("main").unwrap();
   panel.show();
   panel.set_key_window_able2(true);

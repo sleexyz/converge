@@ -146,7 +146,33 @@ macro_rules! nsstring_to_string {
 //     }
 // }
 
-/// Positions a given window at the center of the monitor with cursor
+pub fn position_window_fullscreen(window: &Window<Wry>, scale_factor: f64) {
+    if let Some(monitor) = get_monitor_with_cursor() {
+        let display_size = monitor.size.to_logical::<f64>(monitor.scale_factor);
+        let display_pos = monitor.position.to_logical::<f64>(monitor.scale_factor);
+
+        let handle: id = window.ns_window().unwrap() as _;
+        log::debug!(
+            "display_pos.y: {}, display_size.height: {}",
+            display_pos.y,
+            display_size.height
+        );
+        let size = NSSize {
+            width: display_size.width * scale_factor,
+            height: display_size.height * scale_factor,
+        };
+        let rect = NSRect {
+            origin: NSPoint {
+                x: (display_pos.x + (display_size.width / 2.0)) - (size.width / 2.0),
+                y: (display_pos.y + (display_size.height / 2.0)) - (size.height / 2.0),
+            },
+            size,
+        };
+        let _: () = unsafe { msg_send![handle, setFrame: rect display: YES] };
+    }
+}
+
+
 pub fn position_window_at_the_center_of_the_monitor_with_cursor(window: &Window<Wry>) {
     if let Some(monitor) = get_monitor_with_cursor() {
         let display_size = monitor.size.to_logical::<f64>(monitor.scale_factor);

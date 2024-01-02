@@ -43,7 +43,7 @@ pub fn open_widget_window(app: &AppHandle) {
         //         window.contentView().setAlphaValue_(1.0);
         //     }
         // }
-        // let _ = window.set_ignore_cursor_events(true);
+        let _ = window.set_ignore_cursor_events(true);
         // let _ = window.show().ok();
         position_window(&window, |display_pos, display_size, win_frame_size| {
             NSPoint {
