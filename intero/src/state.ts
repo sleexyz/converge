@@ -1,3 +1,4 @@
+export const activityStateKey = 'activityState';
 
 export interface AppState {
     [id: string]: Activity;
@@ -10,8 +11,12 @@ export interface Activity {
     deadline?: Date;
 }
 
-export function loadState(): AppState {
-    const str = localStorage.getItem('state');
+export function saveState(key: string, state: AppState) {
+    localStorage.setItem(key, JSON.stringify(state));
+}
+
+export function loadState(key: string): AppState {
+    const str = localStorage.getItem(key);
     function makeFallbackState() {
         return {};
     }
