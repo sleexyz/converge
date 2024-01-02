@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getActiveActivity, loadState } from "./state";
+import { activityStateKey, getActiveActivity, loadState } from "./state";
 import "./WidgetView.css";
 // import { XEyes } from "./XEyes";
 import { listen } from "@tauri-apps/api/event";
@@ -16,7 +16,7 @@ interface MouseMoved {
 
 export function WidgetView() {
   const [state, setState] = useState(() => {
-    return loadState();
+    return loadState(activityStateKey);
   });
 
   const [inWindow, setInWindow] = useState(false);
