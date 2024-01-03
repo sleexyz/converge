@@ -6,8 +6,6 @@ import ReactFlow, {
   Edge,
   Node,
   ReactFlowProvider,
-  useEdgesState,
-  useNodesState,
   useReactFlow,
   Handle,
   Position,
@@ -16,29 +14,42 @@ import ReactFlow, {
   applyEdgeChanges,
   OnNodesChange,
   OnEdgesChange,
+  BackgroundVariant,
 } from "reactflow";
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import "reactflow/dist/style.css";
-import { format } from 'date-fns';
+import { format } from "date-fns";
 
 const nodeTypes = {
   custom: CustomNode,
 };
 
-function CustomNode(props: { data: TNode; id: string }) {
+function CustomNode(props: { data: TNode; id: string; selected: boolean }) {
   let classes = "bg-black text-white";
   if (props.data.status === "done") {
-    classes = "bg-white text-black"
+    classes = "bg-white text-black";
   }
   if (props.data.status === "active") {
-    classes += " border-4 border-blue-500";
+    classes = "bg-slate-500 text-white";
+    // classes += " border-4 border-blue-500";
+    classes += " border-2 border-white";
   } else {
     classes += " border-2 border-white";
   }
+  if (props.selected) {
+    classes += " shadow-md shadow-blue-500";
+  } else {
+  }
   const chipText = props.id.substring(0, 3); // Get the first two characters of the id
 
-  const formattedDate = format(props.data.createdAt, 'yyyy-MM-dd HH:mm');
-
+  const formattedDate = format(props.data.createdAt, "yyyy-MM-dd HH:mm");
 
   return (
     <>
@@ -48,9 +59,9 @@ function CustomNode(props: { data: TNode; id: string }) {
         <div className="font-mono absolute top-[-15px] right-[-25px] text-blue-500 font-bold rounded-full px-2 py-1 text-xs">
           {chipText}
         </div>
-        <div className="font-mono absolute bottom-[-15px] right-[-25px] text-red-500 font-bold rounded-full px-2 py-1 text-xs overflow-auto whitespace-nowrap">
+        {/* <div className="font-mono absolute bottom-[-15px] right-[-25px] text-red-500 font-bold rounded-full px-2 py-1 text-xs overflow-auto whitespace-nowrap">
           {formattedDate}
-        </div>
+        </div> */}
       </div>
       <Handle type="source" position={Position.Left} />
     </>
@@ -61,7 +72,7 @@ function CanvasInner(props: { nodes: Record<string, TNode> }) {
   const stateManager = useContext(StateManagerContext);
   const { fitView } = useReactFlow();
   const nodesInitialized = useNodesInitialized();
- 
+
   const g = useMemo(
     () => new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({})),
     []
@@ -88,10 +99,8 @@ function CanvasInner(props: { nodes: Record<string, TNode> }) {
     return [initialNodes, initialEdges];
   }, [props.nodes]);
 
-
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
- 
 
   useEffect(() => {
     if (!nodesInitialized) {
@@ -116,7 +125,6 @@ function CanvasInner(props: { nodes: Record<string, TNode> }) {
       out = getLayoutedElements(g, out, initialEdges, {
         rankdir: "RL",
       }).nodes;
-      console.log(out);
       return out;
     });
     setEdges(initialEdges);
@@ -126,28 +134,32 @@ function CanvasInner(props: { nodes: Record<string, TNode> }) {
   }, [initialNodes, initialEdges, nodesInitialized]);
 
   const onNodesChange: OnNodesChange = useCallback(
-    (changes) => setNodes((nds) => {
-      return applyNodeChanges(changes, nds);
-    }),
-    [setNodes],
+    (changes) =>
+      setNodes((nds) => {
+        return applyNodeChanges(changes, nds);
+      }),
+    [setNodes]
   );
 
   const onEdgesChange: OnEdgesChange = useCallback(
-    (changes) => setEdges((eds) => {
-      console.log(changes);
-      return applyEdgeChanges(changes, eds);
-    }),
-    [setEdges],
+    (changes) =>
+      setEdges((eds) => {
+        return applyEdgeChanges(changes, eds);
+      }),
+    [setEdges]
   );
 
-  const onConnect = useCallback((connection: {source: string, target: string}) => {
-    const from = connection.source;
-    const to = connection.target;
-    if (!from || !to) {
-      return;
-    }
-    stateManager?.addEdge(from, to);
-  }, [stateManager]);
+  const onConnect = useCallback(
+    (connection: { source: string; target: string }) => {
+      const from = connection.source;
+      const to = connection.target;
+      if (!from || !to) {
+        return;
+      }
+      stateManager?.addEdge(from, to);
+    },
+    [stateManager]
+  );
 
   return (
     <ReactFlow
@@ -161,7 +173,13 @@ function CanvasInner(props: { nodes: Record<string, TNode> }) {
       nodesDraggable
       fitView
     >
-      <Background color="white" />
+      <Background
+        color="white"
+        style={{ opacity: "0.15" }}
+        variant={BackgroundVariant.Lines}
+        gap={60}
+        size={1}
+      />
       <Controls className="invert" />
     </ReactFlow>
   );

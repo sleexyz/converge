@@ -24,7 +24,6 @@ export function ActivityPicker() {
   const [activeActivityId, activeActivity] = getActiveActivity(state);
 
   const [showCreateActivity, setShowCreateActivity] = useState(false);
-  console.log(showCreateActivity);
 
   return (
     <>
@@ -34,21 +33,23 @@ export function ActivityPicker() {
       >
         {!showCreateActivity &&
           (!activeActivity || (activeActivity && activeActivity.stop)) && (
-            <button
-              className="mt-16 px-4 py-2 text-2xl rounded-md shadow-sm opacity-50 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              onClick={() => {
-                setShowCreateActivity(true);
-              }}
-            >
-              New activity
-            </button>
+            <FullContainer className="flex items-stretch">
+              <button
+                className="box-content m-8 w-full text-2xl rounded-md shadow-sm opacity-50 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                onClick={() => {
+                  setShowCreateActivity(true);
+                }}
+              >
+                New activity
+              </button>
+            </FullContainer>
           )}
 
         {showCreateActivity &&
           (() => {
             const id = uuidv4();
             return (
-              <>
+              <FullContainer>
                 <ActivityView
                   id={id}
                   editable={true}
@@ -68,7 +69,7 @@ export function ActivityPicker() {
                     setShowCreateActivity(false);
                   }}
                 />
-              </>
+              </FullContainer>
             );
           })()}
 
@@ -102,9 +103,9 @@ export function ActivityPicker() {
             );
             if (isActive) {
               return (
-                <div
+                <FullContainer
                   key={id}
-                  className="flex flex-col justify-between flex-grow flex-shrink-0 h-[300px]"
+                  className="flex flex-col justify-between flex-grow flex-shrink-0"
                 >
                   {activityView}
                   <button
@@ -115,7 +116,7 @@ export function ActivityPicker() {
                   >
                     Stop
                   </button>
-                </div>
+                </FullContainer>
               );
             } else {
               return activityView;
@@ -156,6 +157,16 @@ export function ActivityPicker() {
       return newState;
     });
   }
+}
+
+function FullContainer({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return <div className={`h-[300px] ${className}`}>{children}</div>;
 }
 
 function ActivityView({

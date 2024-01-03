@@ -18,18 +18,9 @@ function App() {
   useGlobalShortcut();
 
   return (
-    <>
-      <div className="fixed bg-black bg-opacity-50 h-full w-full overflow-hidden overscroll-none flex justify-start items-start">
-        <ErrorBoundary>
-          <ToposorterView />
-        </ErrorBoundary>
-        <div className="absolute bottom-0 right-0 h-[300px] overflow-y-scroll overscroll-none bg-black bg-opacity-90 rounded-xl flex flex-col-reverse">
-          <ErrorBoundary>
-            <ActivityPicker />
-          </ErrorBoundary>
-        </div>
-      </div>
-    </>
+    <ErrorBoundary>
+      <ToposorterView />
+    </ErrorBoundary>
   );
 }
 
@@ -45,24 +36,35 @@ function ToposorterView() {
   const [input, setInput] = useState("");
   const [error, setError] = useState<null | Error>(null);
 
-  const trySetState = useCallback((
-    fn: (value: ToposorterStateData) => ToposorterStateData
-  ) => {
-    setState((state) => {
-      try {
-        return fn(state);
-      } catch (e: unknown) {
-        console.error(e);
-        setError(e as Error);
-        return state;
-      }
-    });
-  }, [setState, setError]);
+  const trySetState = useCallback(
+    (fn: (value: ToposorterStateData) => ToposorterStateData) => {
+      setState((state) => {
+        try {
+          return fn(state);
+        } catch (e: unknown) {
+          console.error(e);
+          setError(e as Error);
+          return state;
+        }
+      });
+    },
+    [setState, setError]
+  );
 
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Set focus on command line.
   useEffect(() => {
     inputRef.current?.focus();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+    function onVisibilityChange() {
+      if (!document.hidden) {
+        inputRef.current?.focus();
+      }
+    }
   }, []);
 
   const stateManager = useMemo(() => {
@@ -74,10 +76,14 @@ function ToposorterView() {
         trySetState(withNormalization(ToposorterState.deleteNode(idPrefix)));
       },
       addEdge: (fromPrefix: string, toPrefix: string) => {
-        trySetState(withNormalization(ToposorterState.addEdge(fromPrefix, toPrefix)));
+        trySetState(
+          withNormalization(ToposorterState.addEdge(fromPrefix, toPrefix))
+        );
       },
       setStatus: (idPrefix: string, status: string) => {
-        trySetState(withNormalization(ToposorterState.setStatus(idPrefix, status)));
+        trySetState(
+          withNormalization(ToposorterState.setStatus(idPrefix, status))
+        );
       },
     };
   }, [setState, trySetState]);
@@ -106,11 +112,11 @@ function ToposorterView() {
       } else if (input.startsWith("/done")) {
         const args = input.split(" ");
         let idPrefix = args[1];
-        stateManager.setStatus(idPrefix, 'done');
+        stateManager.setStatus(idPrefix, "done");
       } else if (input.startsWith("/active")) {
         const args = input.split(" ");
         let idPrefix = args[1];
-        stateManager.setStatus(idPrefix, 'active');
+        stateManager.setStatus(idPrefix, "active");
       } else if (input.startsWith("/")) {
         const args = input.split(" ");
         throw new Error(`Unknown command ${args[0]}`);
@@ -132,25 +138,46 @@ function ToposorterView() {
   };
 
   return (
-    <div className="flex flex-col items-start m-[2%] space-y-8 p-8 w-[60%] rounded-xl h-[96%] bg-black">
-      <StateManagerContext.Provider value={stateManager}>
-        <Canvas nodes={state.nodes} />
-      </StateManagerContext.Provider>
-      {error && (
-        <pre className="bg-red-100 text-red-500 m-8 p-8 rounded-xl text-bold absolute right-0 top-0">
-          Error: {error.message}
-        </pre>
-      )}
-      <input
-        ref={inputRef}
-        type="text"
-        placeholder="Command"
-        onKeyDown={handleKeyDown}
-        value={input}
-        onChange={handleOnChange}
-        className="mt-3 px-4 py-2 text-2xl w-full border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-      ></input>
-    </div>
+    <StateManagerContext.Provider value={stateManager}>
+      <div className="absolute bg-black bg-opacity-50 h-full w-full flex justify-start items-start">
+        <div className="flex flex-col items-start m-[3%] space-y-8 p-8 w-[94%] rounded-xl h-[94%] bg-black">
+          <Canvas nodes={state.nodes} />
+          {error && (
+            <pre className="bg-red-100 text-red-500 m-8 p-8 rounded-xl text-bold absolute right-0 top-0">
+              Error: {error.message}
+            </pre>
+          )}
+          <input
+            autoFocus
+            ref={inputRef}
+            type="text"
+            onFocus={(e) => {
+              console.log("onFocus", e);
+              console.log(document.activeElement);
+            }}
+            onBlur={(e) => {
+              console.log("debugging. onblur", e);
+              console.log(document.activeElement);
+            }}
+            placeholder="Command"
+            onKeyDown={handleKeyDown}
+            value={input}
+            onChange={handleOnChange}
+            className="mt-3 px-4 py-2 text-2xl w-full border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          ></input>
+        </div>
+        <div className="flex flex-col items-start m-[3%] space-y-8 w-auto rounded-xl h-[94%]">
+          <div className="flex-1 flex flex-col bg-black w-full rounded-xl p-8">
+            hello
+          </div>
+          <div className="flex-0 basis-[300px] flex flex-col-reverse w-full overscroll-none overflow-y-scroll bg-black rounded-xl">
+            <ErrorBoundary>
+              <ActivityPicker />
+            </ErrorBoundary>
+          </div>
+        </div>
+      </div>
+    </StateManagerContext.Provider>
   );
 }
 
