@@ -211,7 +211,6 @@ export class ToposorterState {
       const state = new ToposorterState(original(draft)!);
       let from = state.reconcileId(fromPrefix);
       let to = state.reconcileId(toPrefix);
-      console.log(from, to);
       if (!from) {
         throw new Error(`Could not find child node with prefix ${fromPrefix}`);
       }
