@@ -1,5 +1,6 @@
 html, body {
   overscroll-behavior: none;
+  overflow: hidden;
 }
 
 .logo.vite:hover {
