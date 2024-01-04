@@ -65,7 +65,8 @@ export function withNormalization(
       draft.nodes = {};
       const entries = Object.entries(state.nodes).sort(
         ([_keyA, a], [_keyB, b]) => {
-          const statusDiff = statusToPoints(b.status) - statusToPoints(a.status);
+          const statusDiff =
+            statusToPoints(b.status) - statusToPoints(a.status);
           if (statusDiff !== 0) {
             return statusDiff;
           }
@@ -139,7 +140,12 @@ export const StateManagerContext = React.createContext<{
   deleteNode: (idPrefix: string) => void;
   addEdge: (fromPrefix: string, toPrefix: string) => void;
   setStatus: (idPrefix: string, status: string) => void;
+  setValue: (idPrefix: string, value: string) => void;
 } | null>(null);
+
+export const SetErrorContext = React.createContext<
+  ((error: Error | null) => void) | null
+>(null);
 
 export class ToposorterState {
   constructor(readonly state: ToposorterStateData) {}
@@ -148,7 +154,7 @@ export class ToposorterState {
     return this.state.nodes;
   }
 
-  reconcileId(idPrefix: string): Id | undefined {
+  reconcileId(idPrefix: string): Id {
     let ret = undefined;
     for (let id of Object.keys(this.state.nodes)) {
       if (id.startsWith(idPrefix)) {
@@ -158,16 +164,16 @@ export class ToposorterState {
         ret = id;
       }
     }
+    if (!ret) {
+      throw new Error(`Could not find node with prefix ${idPrefix}`);
+    }
     return ret;
   }
 
   static setStatus(idPrefix: string, status: string) {
     return produce((draft: Draft<ToposorterStateData>) => {
-      let nodes = original(draft.nodes)!;
-      let id = Object.keys(nodes).find((id) => id.startsWith(idPrefix));
-      if (!id) {
-        throw new Error(`Could not find node with prefix ${idPrefix}`);
-      }
+      const state = new ToposorterState(original(draft)!);
+      const id = state.reconcileId(idPrefix);
       if (status === "unset") {
         delete draft.nodes[id].status;
         return;
@@ -181,14 +187,19 @@ export class ToposorterState {
     });
   }
 
+  static setValue(idPrefix: string, value: string) {
+    return produce((draft: Draft<ToposorterStateData>) => {
+      const state = new ToposorterState(original(draft)!);
+      const id = state.reconcileId(idPrefix);
+      draft.nodes[id].value = value;
+    });
+  }
+
   static deleteNode(idPrefix: string) {
     return produce((draft: Draft<ToposorterStateData>) => {
       const state = new ToposorterState(original(draft)!);
       let nodes = state.getNodes();
-      let id = state.reconcileId(idPrefix);
-      if (!id) {
-        throw new Error(`Could not find node with prefix ${idPrefix}`);
-      }
+      const id = state.reconcileId(idPrefix);
 
       // Delete the node.
       delete draft.nodes[id];
@@ -211,12 +222,6 @@ export class ToposorterState {
       const state = new ToposorterState(original(draft)!);
       let from = state.reconcileId(fromPrefix);
       let to = state.reconcileId(toPrefix);
-      if (!from) {
-        throw new Error(`Could not find child node with prefix ${fromPrefix}`);
-      }
-      if (!to) {
-        throw new Error(`Could not find parent node with prefix ${toPrefix}`);
-      }
       draft.nodes[from].children.push(to);
     });
   }

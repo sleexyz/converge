@@ -35,7 +35,7 @@ export function ActivityPicker() {
           (!activeActivity || (activeActivity && activeActivity.stop)) && (
             <FullContainer className="flex items-stretch">
               <button
-                className="box-content m-8 w-full text-2xl rounded-md shadow-sm opacity-50 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="box-content m-8 w-full text-2xl rounded-md shadow-sm opacity-50 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-gray-500"
                 onClick={() => {
                   setShowCreateActivity(true);
                 }}
@@ -109,7 +109,7 @@ export function ActivityPicker() {
                 >
                   {activityView}
                   <button
-                    className="m-8 px-4 py-2 text-2xl rounded-md shadow-sm opacity-50 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="m-8 px-4 py-2 text-2xl rounded-md shadow-sm opacity-50 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-gray-500"
                     onClick={() => {
                       endCurrentActivity();
                     }}
@@ -274,7 +274,7 @@ function ActivityView({
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
           onBlur={save}
-          className="mt-3 px-4 py-2 text-2xl border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 flex-1"
+          className="mt-3 px-4 py-2 text-2xl border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 flex-1"
         />
       )}
       {!editable && <p className="">{value}</p>}
