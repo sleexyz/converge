@@ -116,10 +116,10 @@ function useBoundVariablesFromContext() {
 
 function mapArg<K extends keyof ArgsShape>(command: Command<any>, variables: Variables, k: K, state: ToposorterState): (arg: string) => void {
     return (arg: string) => {
-        if (command.data.argsShape.subject == ArgType.TNode) {
+        if (command.data.argsShape[k] == ArgType.TNode) {
             variables[k]= state.reconcileId(arg);
         }
-        if (command.data.argsShape.subject == ArgType.string) {
+        if (command.data.argsShape[k] == ArgType.string) {
             variables[k]= arg;
         }
     }
