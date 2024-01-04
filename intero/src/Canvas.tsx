@@ -1,4 +1,4 @@
-import { StateManagerContext, TNode } from "./ToposorterState";
+import { StateManagerContext, TNode, ToposorterStateContext } from "./ToposorterState";
 import * as dagre from "@dagrejs/dagre";
 import ReactFlow, {
   Background,
@@ -55,7 +55,8 @@ function CustomNode(props: { data: TNode; id: string; selected: boolean }) {
 }
 
 export function Canvas(props: { nodes: Record<string, TNode> }) {
-  const stateManager = useContext(StateManagerContext);
+  const stateManager = useContext(StateManagerContext)!;
+  const state = useContext(ToposorterStateContext)!;
   const { fitView } = useReactFlow();
   const nodesInitialized = useNodesInitialized();
 
@@ -137,11 +138,13 @@ export function Canvas(props: { nodes: Record<string, TNode> }) {
 
   const onConnect = useCallback(
     (connection: { source: string; target: string }) => {
-      const from = connection.source;
-      const to = connection.target;
-      if (!from || !to) {
+      const fromId = connection.source;
+      const toId = connection.target;
+      if (!fromId || !toId) {
         return;
       }
+      const from = state.reconcileId(fromId);
+      const to = state.reconcileId(toId);
       stateManager?.addEdge(from, to);
     },
     [stateManager]

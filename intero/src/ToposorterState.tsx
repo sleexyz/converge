@@ -11,13 +11,20 @@ export interface TNode {
   children: Id[];
 }
 
+export function useRefState<T>(initialValue: () => T) {
+  const [state, setState] = React.useState(initialValue());
+  const ref = React.useRef(state);
+  ref.current = state;
+  return [state, setState, ref] as const;
+}
+
 export function useLocalStorageState<T>(
   key: string,
   defaultValue: T,
   // run migrations here
   normalizeState: (value: T) => T = (value) => value
-): [T, React.Dispatch<React.SetStateAction<T>>] {
-  const [state, setState] = React.useState<T>(() => {
+): [T, React.Dispatch<React.SetStateAction<T>>, React.MutableRefObject<T>] {
+  const [state, setState, ref] = useRefState<T>(() => {
     const value = localStorage.getItem(key);
     if (value) {
       return normalizeState(parseJSON(value));
@@ -29,7 +36,7 @@ export function useLocalStorageState<T>(
     localStorage.setItem(key, JSON.stringify(state));
   }, [key, state]);
 
-  return [state, setState];
+  return [state, setState, ref];
 }
 
 function parseJSON<T>(json: string): T {
@@ -75,7 +82,7 @@ export function withNormalization(
           if (timeDiff !== 0) {
             return timeDiff;
           }
-          return Math.random() - 0.5;
+          return 0;
         }
       );
       for (let id of Toposort.sort(entries)) {
@@ -135,17 +142,14 @@ export interface ToposorterStateData {
   nodes: Record<Id, TNode>;
 }
 
-export const StateManagerContext = React.createContext<{
-  addNode: (value: string) => void;
-  deleteNode: (idPrefix: string) => void;
-  addEdge: (fromPrefix: string, toPrefix: string) => void;
-  setStatus: (idPrefix: string, status: string) => void;
-  setValue: (idPrefix: string, value: string) => void;
-} | null>(null);
-
 export const SetErrorContext = React.createContext<
   ((error: Error | null) => void) | null
 >(null);
+
+export type TNodeRow = {
+  id: Id;
+  data: TNode;
+};
 
 export class ToposorterState {
   constructor(readonly state: ToposorterStateData) {}
@@ -154,26 +158,25 @@ export class ToposorterState {
     return this.state.nodes;
   }
 
-  reconcileId(idPrefix: string): Id {
-    let ret = undefined;
+  reconcileId(idPrefix: string): TNodeRow {
+    let retId = undefined;
     for (let id of Object.keys(this.state.nodes)) {
       if (id.startsWith(idPrefix)) {
-        if (ret) {
+        if (retId) {
           throw new Error(`Multiple ids match prefix ${idPrefix}`);
         }
-        ret = id;
+        retId = id;
       }
     }
-    if (!ret) {
+    if (!retId) {
       throw new Error(`Could not find node with prefix ${idPrefix}`);
     }
-    return ret;
+    return {id: retId, data: this.state.nodes[retId]};
   }
 
-  static setStatus(idPrefix: string, status: string) {
+  static setStatus(subject: TNodeRow, status: string) {
     return produce((draft: Draft<ToposorterStateData>) => {
-      const state = new ToposorterState(original(draft)!);
-      const id = state.reconcileId(idPrefix);
+      const {id} = subject;
       if (status === "unset") {
         delete draft.nodes[id].status;
         return;
@@ -187,19 +190,18 @@ export class ToposorterState {
     });
   }
 
-  static setValue(idPrefix: string, value: string) {
+  static setValue(subject: TNodeRow, value: string) {
     return produce((draft: Draft<ToposorterStateData>) => {
-      const state = new ToposorterState(original(draft)!);
-      const id = state.reconcileId(idPrefix);
+      const {id} = subject
       draft.nodes[id].value = value;
     });
   }
 
-  static deleteNode(idPrefix: string) {
+  static deleteNode(subject: TNodeRow) {
     return produce((draft: Draft<ToposorterStateData>) => {
+      const {id} = subject;
       const state = new ToposorterState(original(draft)!);
       let nodes = state.getNodes();
-      const id = state.reconcileId(idPrefix);
 
       // Delete the node.
       delete draft.nodes[id];
@@ -217,12 +219,9 @@ export class ToposorterState {
     });
   }
 
-  static addEdge(fromPrefix: string, toPrefix: string) {
+  static addEdge(from: TNodeRow, to: TNodeRow) {
     return produce((draft: Draft<ToposorterStateData>) => {
-      const state = new ToposorterState(original(draft)!);
-      let from = state.reconcileId(fromPrefix);
-      let to = state.reconcileId(toPrefix);
-      draft.nodes[from].children.push(to);
+      draft.nodes[from.id].children.push(to.id);
     });
   }
 
@@ -236,4 +235,86 @@ export class ToposorterState {
       };
     });
   }
+}
+
+export class StateManager {
+  constructor(
+    readonly trySetState: (
+      fn: (state: ToposorterStateData) => ToposorterStateData
+    ) => void
+  ) {}
+
+  bindAction<Args extends any[]>(
+    action: (
+      ...args: Args
+    ) => (state: ToposorterStateData) => ToposorterStateData
+  ): (...args: Args) => void {
+    return (...args: Args) => {
+      this.trySetState(action(...args));
+    };
+  }
+  addNode = this.bindAction(ToposorterState.addNode);
+  deleteNode = this.bindAction(ToposorterState.deleteNode);
+  addEdge = this.bindAction(ToposorterState.addEdge);
+  setStatus = this.bindAction(ToposorterState.setStatus);
+  setValue = this.bindAction(ToposorterState.setValue);
+}
+
+export const StateManagerContext = React.createContext<StateManager | null>(
+  null
+);
+
+export function useToposorterState() {
+  return React.useContext(ToposorterStateContext)!;
+}
+
+export function useError() {
+  return React.useContext(ErrorContext)!;
+}
+
+export const ToposorterStateContext = React.createContext<ToposorterState | null>(
+  null
+);
+const ErrorContext = React.createContext<Error | null>(null);
+
+export function ToposorterStateProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [state, setState, stateRef] = useLocalStorageState<ToposorterStateData>(
+    "toposorter",
+    {
+      nodes: {},
+    },
+    produce((_draft: Draft<ToposorterStateData>) => {})
+  );
+
+  const [error, setError] = React.useState<null | Error>(null);
+  const trySetState = (
+    fn: (value: ToposorterStateData) => ToposorterStateData
+  ) => {
+    setState(fn(stateRef.current));
+  };
+
+  const stateManager = React.useMemo(
+    () => new StateManager(trySetState),
+    [trySetState]
+  );
+
+  const toposorterState = React.useMemo(() => {
+    return new ToposorterState(state);
+  }, [state]);
+
+  return (
+    <StateManagerContext.Provider value={stateManager}>
+      <SetErrorContext.Provider value={setError}>
+        <ToposorterStateContext.Provider value={toposorterState}>
+          <ErrorContext.Provider value={error}>
+            {children}
+          </ErrorContext.Provider>
+        </ToposorterStateContext.Provider>
+      </SetErrorContext.Provider>
+    </StateManagerContext.Provider>
+  );
 }
