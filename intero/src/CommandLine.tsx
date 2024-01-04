@@ -103,7 +103,7 @@ function parseCommand(input: string): [Command<any>, string[]] {
 }
 
 function useBoundVariablesFromContext() {
-  const node = useSelectedNode();
+  const [node] = useSelectedNode();
   return useMemo(() => {
     const variables: Variables = {};
     const tnode = node?.data as TNode | undefined;
