@@ -1,58 +1,57 @@
-export const activityStateKey = 'activityState';
+import * as React from "react";
 
-export interface AppState {
-    [id: string]: Activity;
+export function useRefState<T>(initialValue: () => T) {
+  const [state, setState] = React.useState(initialValue());
+  const ref = React.useRef(state);
+  ref.current = state;
+  return [state, setState, ref] as const;
 }
 
-export interface Activity {
-    value?: string;
-    start?: Date;
-    stop?: Date;
-    deadline?: Date;
-}
+export function useLocalStorageState<T>(
+  key: string,
+  defaultValue: T,
+  // run migrations here
+  normalizeState: (value: T) => T = (value) => value
+): [T, React.Dispatch<React.SetStateAction<T>>, React.MutableRefObject<T>] {
+  const [state, setState, ref] = useRefState<T>(() => {
+    const value = localStorage.getItem(key);
+    if (value) {
+      return normalizeState(parseJSON(value));
+    }
+    return defaultValue;
+  });
 
-export function saveState(key: string, state: AppState) {
+  React.useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== key) {
+        return;
+      }
+      const value = e.newValue;
+      if (value) {
+        setState(normalizeState(parseJSON(value)));
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  React.useEffect(() => {
     localStorage.setItem(key, JSON.stringify(state));
+  }, [key, state]);
+
+  return [state, setState, ref];
 }
 
-export function loadState(key: string): AppState {
-    const str = localStorage.getItem(key);
-    function makeFallbackState() {
-        return {};
-    }
-    if (!str) {
-        return makeFallbackState();
-    }
-    try {
-        const obj = JSON.parse(str);
-        let outputObj: AppState = {};
-        for (let [key, value] of Object.entries(obj)) {
-            outputObj[key] = parseActivity(value as Activity);
-        }
-
-        if (Object.keys(outputObj).length === 0) {
-            return makeFallbackState();
-        }
-
-        function parseActivity(obj: Activity) {
-            return {
-                start: obj.start ? new Date(obj.start) : undefined,
-                stop: obj.stop ? new Date(obj.stop) : undefined,
-                value: obj.value,
-                deadline: obj.deadline ? new Date(obj.deadline) : undefined,
-            };
-        }
-        return outputObj;
-    } catch (e) {
-        return makeFallbackState();
-    }
+function parseJSON<T>(json: string): T {
+  try {
+    return JSON.parse(json, (key, value) => {
+      if (key === "createdAt") {
+        return new Date(value);
+      }
+      return value;
+    });
+  } catch (e) {
+    throw new Error(`Could not parse JSON: ${e}`);
+  }
 }
 
-export function getActiveActivity(state: AppState): ([string, Activity] | [undefined , undefined ]) {
-    const id = Object.keys(state)[Object.keys(state).length - 1];
-    const activity = state[id];
-    if (activity.stop) {
-      return [undefined, undefined];
-    }
-    return [id, activity];
-}

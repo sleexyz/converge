@@ -26,9 +26,9 @@ function CustomNode(props: { data: TNode; id: string; selected: boolean }) {
   let classes = "bg-black text-white";
 
   if (props.data.status === "done") {
-    classes = "bg-gray-600 text-white";
+    classes = "bg-gray-800 text-white";
   } else if (props.data.status === "active") {
-    classes = "bg-white text-black";
+    classes = "bg-gray-500 text-white";
   }
 
   if (props.selected) {

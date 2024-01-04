@@ -6,7 +6,7 @@ import { CommandLine } from "./CommandLine";
 import { useSelectedNode } from "./Selection";
 
 export function SelectionPane() {
-  const selectedNode = useSelectedNode();
+  const [selectedNode] = useSelectedNode();
   const tnode = selectedNode?.data as TNode | undefined;
 
   return (

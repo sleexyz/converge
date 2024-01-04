@@ -1,6 +1,7 @@
 import { Draft, original, produce } from "immer";
 import * as React from "react";
 import { v4 as uuidv4 } from "uuid";
+import { useLocalStorageState } from "./state";
 
 export type Id = string;
 
@@ -9,47 +10,6 @@ export interface TNode {
   createdAt: Date;
   status?: "active" | "done";
   children: Id[];
-}
-
-export function useRefState<T>(initialValue: () => T) {
-  const [state, setState] = React.useState(initialValue());
-  const ref = React.useRef(state);
-  ref.current = state;
-  return [state, setState, ref] as const;
-}
-
-export function useLocalStorageState<T>(
-  key: string,
-  defaultValue: T,
-  // run migrations here
-  normalizeState: (value: T) => T = (value) => value
-): [T, React.Dispatch<React.SetStateAction<T>>, React.MutableRefObject<T>] {
-  const [state, setState, ref] = useRefState<T>(() => {
-    const value = localStorage.getItem(key);
-    if (value) {
-      return normalizeState(parseJSON(value));
-    }
-    return defaultValue;
-  });
-
-  React.useEffect(() => {
-    localStorage.setItem(key, JSON.stringify(state));
-  }, [key, state]);
-
-  return [state, setState, ref];
-}
-
-function parseJSON<T>(json: string): T {
-  try {
-    return JSON.parse(json, (key, value) => {
-      if (key === "createdAt") {
-        return new Date(value);
-      }
-      return value;
-    });
-  } catch (e) {
-    throw new Error(`Could not parse JSON: ${e}`);
-  }
 }
 
 function statusToPoints(status: "active" | "done" | undefined): number {
@@ -154,8 +114,21 @@ export type TNodeRow = {
 export class ToposorterState {
   constructor(readonly state: ToposorterStateData) {}
 
+  getNode(id: Id): TNode {
+    return this.state.nodes[id];
+  }
+
   getNodes(): Record<Id, TNode> {
     return this.state.nodes;
+  }
+
+  getActiveNode(): TNodeRow | null {
+    for (let id of Object.keys(this.state.nodes)) {
+      if (this.state.nodes[id].status === "active") {
+        return {id, data: this.state.nodes[id]};
+      }
+    }
+    return null
   }
 
   reconcileId(idPrefix: string): TNodeRow {

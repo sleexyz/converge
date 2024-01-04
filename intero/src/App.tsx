@@ -1,24 +1,17 @@
-import { useState, useMemo, useCallback } from "react";
-import { ActivityPicker } from "./ActivityPicker";
 import "./App.css";
 import { useGlobalShortcut } from "./use_global_shortcut";
 import { ErrorBoundary } from "./ErrorBoundary";
-import { produce, Draft } from "immer";
 import { Canvas } from "./Canvas";
 import {
-  SetErrorContext,
-  StateManagerContext,
-  ToposorterState,
-  ToposorterStateData,
   ToposorterStateProvider,
   useError,
-  useLocalStorageState,
   useToposorterState,
-  withNormalization,
 } from "./ToposorterState";
 import { ReactFlowProvider } from "reactflow";
 import { SelectionPane } from "./SelectionPane";
-import { SelectionProvider } from "./Selection";
+import { SelectionProvider, useSelectedNode } from "./Selection";
+import { ActivityLogProvider, useSyncActivityState } from "./activity";
+import { useEffect } from "react";
 
 function App() {
   useGlobalShortcut();
@@ -27,9 +20,11 @@ function App() {
     <ErrorBoundary>
       <ReactFlowProvider>
         <ToposorterStateProvider>
-          <SelectionProvider>
-            <ToposorterView />
-          </SelectionProvider>
+          <ActivityLogProvider>
+            <SelectionProvider>
+              <ToposorterView />
+            </SelectionProvider>
+          </ActivityLogProvider>
         </ToposorterStateProvider>
       </ReactFlowProvider>
     </ErrorBoundary>
@@ -39,6 +34,9 @@ function App() {
 function ToposorterView() {
   const state = useToposorterState();
   const error = useError();
+
+  useSyncActivityState();
+  useSelectActiveOnWake();
 
   return (
     <div className="absolute bg-black bg-opacity-50 h-full w-full flex justify-start items-start">
@@ -51,15 +49,33 @@ function ToposorterView() {
             Error: {error.message}
           </pre>
         )}
-        <div className="flex-0 basis-[300px] flex flex-col-reverse w-full overscroll-none overflow-y-scroll bg-black rounded-xl">
+        {/* <div className="flex-0 basis-[300px] flex flex-col-reverse w-full overscroll-none overflow-y-scroll bg-black rounded-xl">
           <ErrorBoundary>
             <ActivityPicker />
           </ErrorBoundary>
-        </div>
+        </div> */}
         <SelectionPane />
       </div>
     </div>
   );
+}
+
+function useSelectActiveOnWake() {
+  const state = useToposorterState();
+  const activeNode = state.getActiveNode();
+  const [, setSelectedNode] = useSelectedNode();
+
+  useEffect(() => {
+    function onVisibilityChange() {
+      if (!document.hidden) {
+        setSelectedNode(activeNode);
+      }
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [activeNode]);
 }
 
 export default App;

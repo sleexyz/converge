@@ -8,7 +8,7 @@ import {
   getActiveActivity,
   loadState,
   saveState,
-} from "./state";
+} from "./activity_state";
 
 export function ActivityPicker() {
   const [state, setState] = useState(() => {
