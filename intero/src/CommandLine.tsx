@@ -1,5 +1,6 @@
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Id,
   SetErrorContext,
   StateManager,
   StateManagerContext,
@@ -12,14 +13,15 @@ import { useSelectedNode } from "./Selection";
 
 class ArgType<_T> {
   static TNode = new ArgType<TNodeRow>();
+  static Id = new ArgType<Id>();
   static string = new ArgType<string>();
 }
 
 type TypeOfArgType<T> = T extends ArgType<infer U> ? U : never;
 
 interface ArgsShape {
-  subject?: typeof ArgType.TNode | typeof ArgType.string;
-  object?: typeof ArgType.TNode | typeof ArgType.string;
+  subject?: typeof ArgType.TNode | typeof ArgType.string | typeof ArgType.Id;
+  object?: typeof ArgType.TNode | typeof ArgType.string | typeof ArgType.Id;
 }
 
 type VariablesFromArgs<A extends ArgsShape> = {
@@ -46,7 +48,7 @@ const commands = Object.fromEntries(
     new Command({
       command: "delete",
       argsShape: {
-        subject: ArgType.TNode,
+        subject: ArgType.Id,
       },
       runCommand(args, stateManager) {
         stateManager.deleteNode(args.subject);
@@ -55,8 +57,8 @@ const commands = Object.fromEntries(
     new Command({
       command: "child",
       argsShape: {
-        subject: ArgType.TNode,
-        object: ArgType.TNode,
+        subject: ArgType.Id,
+        object: ArgType.Id,
       },
       runCommand(args, stateManager) {
         stateManager.addEdge(args.subject, args.object);
@@ -65,7 +67,7 @@ const commands = Object.fromEntries(
     new Command({
       command: "status",
       argsShape: {
-        subject: ArgType.TNode,
+        subject: ArgType.Id,
         object: ArgType.string,
       },
       runCommand(args, stateManager) {
@@ -75,7 +77,7 @@ const commands = Object.fromEntries(
     new Command({
       command: "done",
       argsShape: {
-        subject: ArgType.TNode,
+        subject: ArgType.Id,
       },
       runCommand(args, stateManager) {
         stateManager.setStatus(args.subject, "done");
@@ -84,7 +86,7 @@ const commands = Object.fromEntries(
     new Command({
       command: "active",
       argsShape: {
-        subject: ArgType.TNode,
+        subject: ArgType.Id,
       },
       runCommand(args, stateManager) {
         stateManager.setStatus(args.subject, "active");
@@ -106,23 +108,31 @@ function useBoundVariablesFromContext() {
   const [node] = useSelectedNode();
   return useMemo(() => {
     const variables: Variables = {};
-    const tnode = node?.data as TNode | undefined;
-    if (tnode) {
-      variables.subject = { data: tnode, id: node.id };
+    const id = node?.id;
+    if (id) {
+      variables.subject = id;
     }
     return variables;
   }, [node]);
 }
 
-function mapArg<K extends keyof ArgsShape>(command: Command<any>, variables: Variables, k: K, state: ToposorterState): (arg: string) => void {
-    return (arg: string) => {
-        if (command.data.argsShape[k] == ArgType.TNode) {
-            variables[k]= state.reconcileId(arg);
-        }
-        if (command.data.argsShape[k] == ArgType.string) {
-            variables[k]= arg;
-        }
+function mapArg<K extends keyof ArgsShape>(
+  command: Command<any>,
+  variables: Variables,
+  k: K,
+  state: ToposorterState
+): (arg: string) => void {
+  return (arg: string) => {
+    if (command.data.argsShape[k] == ArgType.TNode) {
+      variables[k] = state.reconcileId(arg);
     }
+    if (command.data.argsShape[k] == ArgType.Id) {
+      variables[k] = state.reconcileId(arg).id;
+    }
+    if (command.data.argsShape[k] == ArgType.string) {
+      variables[k] = arg;
+    }
+  };
 }
 
 export function CommandLine() {
@@ -153,8 +163,8 @@ export function CommandLine() {
 
         // Maps positional args to variables
         const mapArgs = [
-            mapArg(command, variables, "subject", state),
-            mapArg(command, variables, "object", state),
+          mapArg(command, variables, "subject", state),
+          mapArg(command, variables, "object", state),
         ];
         // If subject is bound, we can omit it.
         if (variables.subject !== undefined) {
@@ -201,14 +211,6 @@ export function CommandLine() {
       autoFocus
       ref={inputRef}
       type="text"
-      onFocus={(e) => {
-        console.log("onFocus", e);
-        console.log(document.activeElement);
-      }}
-      onBlur={(e) => {
-        console.log("debugging. onblur", e);
-        console.log(document.activeElement);
-      }}
       placeholder="Command"
       onKeyDown={handleKeyDown}
       value={input}

@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { Id, StateManagerContext, TNode, ToposorterStateContext } from "./ToposorterState";
+import { Id, StateManagerContext, TNode } from "./ToposorterState";
 import ReactTextareaAutosize from "react-textarea-autosize";
 import { format } from "date-fns";
 import { CommandLine } from "./CommandLine";
@@ -22,7 +22,6 @@ export function SelectionPane() {
 }
 
 function SelectionEditor({ tnode, id }: { tnode: TNode; id: Id }) {
-  const state = useContext(ToposorterStateContext)!;
   const stateManager = useContext(StateManagerContext)!;
   const [nodeValue, setNodeValue] = useState<string | null>(null);
 
@@ -40,8 +39,7 @@ function SelectionEditor({ tnode, id }: { tnode: TNode; id: Id }) {
     setNodeValue(event.target.value);
     // Update the node value in the state manager
     // Assuming there's a method updateNode in stateManager
-    const node = state.reconcileId(id);
-    stateManager.setValue(node, event.target.value);
+    stateManager.setValue(id, event.target.value);
   };
 
   // Format as "September 5, 2021 at 12:00 PM"
