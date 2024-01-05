@@ -59,9 +59,9 @@ function CustomNode(props: { data: TNode; id: string; selected: boolean }) {
         onClick={handleOnClick}
       >
         {props.data.value.split("\n")[0]}
-        <div className="font-mono absolute top-[-15px] right-[-25px] text-gray-500 font-bold rounded-full px-2 py-1 text-xs">
+        {/* <div className="font-mono absolute top-[-15px] right-[-25px] text-gray-500 font-bold rounded-full px-2 py-1 text-xs">
           {chipText}
-        </div>
+        </div> */}
       </div>
       <div></div>
       <Handle type="source" position={Position.Left} />

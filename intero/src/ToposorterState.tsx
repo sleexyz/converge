@@ -9,6 +9,7 @@ export interface TNode {
   value: string;
   createdAt: Date;
   status?: "active" | "done";
+  notes?: string;
   children: Id[];
 }
 
@@ -158,7 +159,6 @@ export class ToposorterState {
           `Invalid status ${status}. Expected "active" or "done" or "unset"`
         );
       }
-      console.log(id);
       draft.nodes[id].status = status as "active" | "done";
     });
   }
@@ -166,6 +166,12 @@ export class ToposorterState {
   static setValue(id: Id, value: string) {
     return produce((draft: Draft<ToposorterStateData>) => {
       draft.nodes[id].value = value;
+    });
+  }
+
+  static setNotes(id: Id, notes: string) {
+    return produce((draft: Draft<ToposorterStateData>) => {
+      draft.nodes[id].notes = notes;
     });
   }
 
@@ -237,6 +243,7 @@ export class StateManager {
   addEdge = this.bindAction(ToposorterState.addEdge);
   setStatus = this.bindAction(ToposorterState.setStatus);
   setValue = this.bindAction(ToposorterState.setValue);
+  setNotes = this.bindAction(ToposorterState.setNotes);
 }
 
 export const StateManagerContext = React.createContext<StateManager | null>(
