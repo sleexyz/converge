@@ -147,9 +147,8 @@ export class ToposorterState {
     return {id: retId, data: this.state.nodes[retId]};
   }
 
-  static setStatus(subject: TNodeRow, status: string) {
+  static setStatus(id: Id, status: string) {
     return produce((draft: Draft<ToposorterStateData>) => {
-      const {id} = subject;
       if (status === "unset") {
         delete draft.nodes[id].status;
         return;
@@ -159,20 +158,19 @@ export class ToposorterState {
           `Invalid status ${status}. Expected "active" or "done" or "unset"`
         );
       }
+      console.log(id);
       draft.nodes[id].status = status as "active" | "done";
     });
   }
 
-  static setValue(subject: TNodeRow, value: string) {
+  static setValue(id: Id, value: string) {
     return produce((draft: Draft<ToposorterStateData>) => {
-      const {id} = subject
       draft.nodes[id].value = value;
     });
   }
 
-  static deleteNode(subject: TNodeRow) {
+  static deleteNode(id: Id) {
     return produce((draft: Draft<ToposorterStateData>) => {
-      const {id} = subject;
       const state = new ToposorterState(original(draft)!);
       let nodes = state.getNodes();
 
@@ -192,9 +190,9 @@ export class ToposorterState {
     });
   }
 
-  static addEdge(from: TNodeRow, to: TNodeRow) {
+  static addEdge(from: Id, to: Id) {
     return produce((draft: Draft<ToposorterStateData>) => {
-      draft.nodes[from.id].children.push(to.id);
+      draft.nodes[from].children.push(to);
     });
   }
 

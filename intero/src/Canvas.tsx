@@ -1,4 +1,8 @@
-import { StateManagerContext, TNode, ToposorterStateContext } from "./ToposorterState";
+import {
+  StateManagerContext,
+  TNode,
+  ToposorterStateContext,
+} from "./ToposorterState";
 import * as dagre from "@dagrejs/dagre";
 import ReactFlow, {
   Background,
@@ -40,7 +44,6 @@ function CustomNode(props: { data: TNode; id: string; selected: boolean }) {
     classes += " border-2 border-gray-500";
   }
   const chipText = props.id.substring(0, 3); // Get the first two characters of the id
-
 
   return (
     <>
@@ -126,6 +129,11 @@ export function Canvas(props: { nodes: Record<string, TNode> }) {
   const onNodesChange: OnNodesChange = useCallback(
     (changes) =>
       setNodes((nds) => {
+        for (const change of changes) {
+          if (change.type === "remove") {
+            stateManager.deleteNode(change.id);
+          }
+        }
         return applyNodeChanges(changes, nds);
       }),
     [setNodes]
