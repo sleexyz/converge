@@ -169,6 +169,13 @@ export class ToposorterState {
     });
   }
 
+  static deleteEdge(edgeId: Id) {
+    return produce((draft: Draft<ToposorterStateData>) => {
+      const [from, to] = edgeId.split("--");
+      draft.nodes[from].children = draft.nodes[from].children.filter(x => x !== to);
+    });
+  }
+
   static deleteNode(id: Id) {
     return produce((draft: Draft<ToposorterStateData>) => {
       const state = new ToposorterState(original(draft)!);
@@ -226,6 +233,7 @@ export class StateManager {
   }
   addNode = this.bindAction(ToposorterState.addNode);
   deleteNode = this.bindAction(ToposorterState.deleteNode);
+  deleteEdge = this.bindAction(ToposorterState.deleteEdge);
   addEdge = this.bindAction(ToposorterState.addEdge);
   setStatus = this.bindAction(ToposorterState.setStatus);
   setValue = this.bindAction(ToposorterState.setValue);

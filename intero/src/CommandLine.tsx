@@ -10,6 +10,7 @@ import {
   ToposorterStateContext,
 } from "./ToposorterState";
 import { useSelectedNode } from "./Selection";
+import { UIStateContex } from "./ui_state";
 
 class ArgType<_T> {
   static TNode = new ArgType<TNodeRow>();
@@ -192,7 +193,7 @@ export function CommandLine() {
     }
   };
 
-  // Set focus on command line.
+  // Set focus on input when the page is visible.
   useEffect(() => {
     inputRef.current?.focus();
     document.addEventListener("visibilitychange", onVisibilityChange);
@@ -205,6 +206,19 @@ export function CommandLine() {
       }
     }
   }, []);
+
+  // Set focus on input when the selected node changes.
+  // const [selectedNode] = useSelectedNode();
+  // useEffect(() => {
+  //   inputRef.current?.focus();
+  // }, [selectedNode]);
+
+
+  const uiState = useContext(UIStateContex)!;
+  useEffect(() => {
+    uiState.bindCommandLineRef(inputRef);
+  }, [inputRef]);
+
 
   return (
     <input

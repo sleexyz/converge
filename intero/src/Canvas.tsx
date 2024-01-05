@@ -21,6 +21,7 @@ import ReactFlow, {
 } from "reactflow";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import "reactflow/dist/style.css";
+import { UIStateContex } from "./ui_state";
 
 const nodeTypes = {
   custom: CustomNode,
@@ -45,10 +46,18 @@ function CustomNode(props: { data: TNode; id: string; selected: boolean }) {
   }
   const chipText = props.id.substring(0, 3); // Get the first two characters of the id
 
+  const uiState = useContext(UIStateContex)!;
+  function handleOnClick() {
+    uiState.focusCommandLine();
+  }
+
   return (
     <>
       <Handle type="target" position={Position.Right} />
-      <div className={` box-content p-2 rounded-2xl ${classes}`}>
+      <div
+        className={` box-content p-2 rounded-2xl ${classes}`}
+        onClick={handleOnClick}
+      >
         {props.data.value.split("\n")[0]}
         <div className="font-mono absolute top-[-15px] right-[-25px] text-gray-500 font-bold rounded-full px-2 py-1 text-xs">
           {chipText}
@@ -62,7 +71,6 @@ function CustomNode(props: { data: TNode; id: string; selected: boolean }) {
 
 export function Canvas(props: { nodes: Record<string, TNode> }) {
   const stateManager = useContext(StateManagerContext)!;
-  const state = useContext(ToposorterStateContext)!;
   const { fitView } = useReactFlow();
   const nodesInitialized = useNodesInitialized();
 
@@ -142,6 +150,11 @@ export function Canvas(props: { nodes: Record<string, TNode> }) {
   const onEdgesChange: OnEdgesChange = useCallback(
     (changes) =>
       setEdges((eds) => {
+        for (const change of changes) {
+          if (change.type === "remove") {
+            stateManager.deleteEdge(change.id);
+          }
+        }
         return applyEdgeChanges(changes, eds);
       }),
     [setEdges]
@@ -154,9 +167,7 @@ export function Canvas(props: { nodes: Record<string, TNode> }) {
       if (!fromId || !toId) {
         return;
       }
-      const from = state.reconcileId(fromId);
-      const to = state.reconcileId(toId);
-      stateManager?.addEdge(from, to);
+      stateManager?.addEdge(fromId, toId);
     },
     [stateManager]
   );
