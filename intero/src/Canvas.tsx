@@ -23,18 +23,21 @@ const nodeTypes = {
 };
 
 function CustomNode(props: { data: TNode; id: string; selected: boolean }) {
-  let classes = "bg-black text-white";
+  let classes = "";
 
   if (props.data.status === "done") {
-    classes = "bg-gray-800 text-white";
+    classes = "bg-slate-800 text-white";
   } else if (props.data.status === "active") {
-    classes = "bg-gray-500 text-white";
+    classes = "bg-slate-500 text-white";
+  } else {
+    classes = "bg-black text-white";
+    classes += " border-dashed";
   }
 
   if (props.selected) {
-    classes += " border border-indigo-500";
+    classes += " border-2 border-indigo-500";
   } else {
-    classes += " border border-gray-500";
+    classes += " border-2 border-gray-500";
   }
   const chipText = props.id.substring(0, 3); // Get the first two characters of the id
 
@@ -42,7 +45,7 @@ function CustomNode(props: { data: TNode; id: string; selected: boolean }) {
   return (
     <>
       <Handle type="target" position={Position.Right} />
-      <div className={`p-2 rounded-xl ${classes}`}>
+      <div className={` box-content p-2 rounded-2xl ${classes}`}>
         {props.data.value.split("\n")[0]}
         <div className="font-mono absolute top-[-15px] right-[-25px] text-gray-500 font-bold rounded-full px-2 py-1 text-xs">
           {chipText}
