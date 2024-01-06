@@ -4,7 +4,6 @@ import {
   SetErrorContext,
   StateManager,
   StateManagerContext,
-  TNode,
   TNodeRow,
   ToposorterState,
   ToposorterStateContext,
@@ -53,6 +52,15 @@ const commands = Object.fromEntries(
       },
       runCommand(args, stateManager) {
         stateManager.deleteNode(args.subject);
+      },
+    }),
+    new Command({
+      command: "add",
+      argsShape: {
+        subject: ArgType.Id,
+      },
+      runCommand(args, stateManager) {
+        stateManager.addChild(args.subject);
       },
     }),
     new Command({
@@ -208,10 +216,10 @@ export function CommandLine() {
   }, []);
 
   // Set focus on input when the selected node changes.
-  // const [selectedNode] = useSelectedNode();
-  // useEffect(() => {
-  //   inputRef.current?.focus();
-  // }, [selectedNode]);
+  const [selectedNode] = useSelectedNode();
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [selectedNode]);
 
 
   const uiState = useContext(UIStateContex)!;
@@ -230,6 +238,7 @@ export function CommandLine() {
       value={input}
       onChange={handleOnChange}
       className="mt-3 px-4 py-2 text-2xl w-full border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
+      autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck="false"
     ></input>
   );
 }

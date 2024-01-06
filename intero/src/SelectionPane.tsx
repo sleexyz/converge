@@ -35,7 +35,7 @@ function SelectionEditor({ tnode, id }: { tnode: TNode; id: Id }) {
   }, [tnode]);
 
   const handleValueChange = useCallback(
-    (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    (event: React.ChangeEvent<HTMLInputElement>) => {
       setValue(event.target.value);
       stateManager.setValue(id, event.target.value);
     },
@@ -57,7 +57,7 @@ function SelectionEditor({ tnode, id }: { tnode: TNode; id: Id }) {
     <>
       <div className="space-y-8 flex flex-col">
         <div className="space-y-4 flex flex-col">
-          <ReactTextareaAutosize
+          <input
             value={value || ""}
             onChange={handleValueChange}
             placeholder="Title"
