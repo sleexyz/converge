@@ -1,7 +1,6 @@
 import {
   StateManagerContext,
   TNode,
-  ToposorterStateContext,
 } from "./ToposorterState";
 import * as dagre from "@dagrejs/dagre";
 import ReactFlow, {
@@ -44,11 +43,10 @@ function CustomNode(props: { data: TNode; id: string; selected: boolean }) {
   } else {
     classes += " border-2 border-gray-500";
   }
-  const chipText = props.id.substring(0, 3); // Get the first two characters of the id
 
   const uiState = useContext(UIStateContex)!;
   function handleOnClick() {
-    uiState.focusCommandLine();
+    // uiState.focusCommandLine();
   }
 
   return (

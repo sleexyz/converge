@@ -209,11 +209,23 @@ export class ToposorterState {
     });
   }
 
-  static addNode(value: string) {
+  static addChild(from: Id) {
     return produce((draft: ToposorterStateData) => {
       const id = uuidv4();
       draft.nodes[id] = {
-        value,
+        value: "Task",
+        createdAt: new Date(),
+        children: [],
+      };
+      draft.nodes[from].children.push(id);
+    });
+  }
+
+  static addNode(value?: string) {
+    return produce((draft: ToposorterStateData) => {
+      const id = uuidv4();
+      draft.nodes[id] = {
+        value: value ?? "",
         createdAt: new Date(),
         children: [],
       };
@@ -238,6 +250,7 @@ export class StateManager {
     };
   }
   addNode = this.bindAction(ToposorterState.addNode);
+  addChild = this.bindAction(ToposorterState.addChild);
   deleteNode = this.bindAction(ToposorterState.deleteNode);
   deleteEdge = this.bindAction(ToposorterState.deleteEdge);
   addEdge = this.bindAction(ToposorterState.addEdge);
