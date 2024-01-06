@@ -1,17 +1,37 @@
-import { SetStateAction, createContext, useContext, useMemo, useState } from "react";
-import { useOnSelectionChange } from "reactflow";
-import { TNodeRow } from "./ToposorterState";
+import { SetStateAction, createContext, useCallback, useContext, useMemo, useState } from "react";
+import { useOnSelectionChange, useStoreApi } from "reactflow";
+import { Id, TNodeRow, ToposorterStateManagerContext } from "./ToposorterState";
 
-const SelectedNodeContext = createContext<[TNodeRow, React.Dispatch<SetStateAction<TNodeRow|null>>] | null>(null);
+const SelectedNodeContext = createContext<[TNodeRow, React.Dispatch<SetStateAction<Id|null>>] | null>(null);
 
 export function SelectionProvider({ children }: { children: React.ReactNode }) {
-  const [selectedNode, setSelectedNode] = useState<TNodeRow |null>(null);
+  const toposorterStateManager = useContext(ToposorterStateManagerContext)!;
+
+  const [selectedNode, setSelectedNodeRaw] = useState<TNodeRow |null>(null);
+
+  const store = useStoreApi();
+ 
+
+  const setSelectedNode = useCallback((id: Id | null) => {
+    if (!id) {
+      setSelectedNodeRaw(null);
+      return;
+    }
+    const row = {
+      data: toposorterStateManager.state().getNode(id),
+      id,
+    };
+    setSelectedNodeRaw(row);
+    const { addSelectedNodes, resetSelectedElements } = store.getState();
+    // resetSelectedElements();
+    addSelectedNodes([id]);
+  }, [setSelectedNodeRaw, toposorterStateManager]);
 
   useOnSelectionChange({
     onChange: ({ nodes }) => {
         const node = nodes.length > 0 ? nodes[0] : null;
         if (node) {
-            setSelectedNode(node);
+            setSelectedNode(node.id);
         }
     },
   });
@@ -22,7 +42,7 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
       setSelectedNode,
     ] as [
         TNodeRow,
-        React.Dispatch<SetStateAction<TNodeRow|null>>,
+        React.Dispatch<SetStateAction<Id|null>>,
     ];
   }, [selectedNode, setSelectedNode]);
 

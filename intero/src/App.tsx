@@ -44,7 +44,7 @@ function ToposorterView() {
         <Canvas nodes={state.getNodes()} />
       </div>
       <div className="flex-0 flex-grow-0 flex-shrink flex flex-col items-start m-[3%] w-[600px] space-y-8 rounded-xl h-[94%]">
-        {error && (
+      {error && (
           <pre className="bg-red-100 text-red-500 m-8 p-8 rounded-xl text-bold fixed right-0 top-0">
             Error: {error.message}
           </pre>
@@ -68,7 +68,7 @@ function useSelectActiveOnWake() {
   useEffect(() => {
     function onVisibilityChange() {
       if (!document.hidden) {
-        setSelectedNode(activeNode);
+        setSelectedNode(activeNode?.id ?? null);
       }
     }
     document.addEventListener("visibilitychange", onVisibilityChange);

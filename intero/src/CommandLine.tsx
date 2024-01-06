@@ -2,26 +2,27 @@ import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   Id,
   SetErrorContext,
-  StateManager,
-  StateManagerContext,
+  ToposorterStateManager,
+  ToposorterStateManagerContext,
   TNodeRow,
   ToposorterState,
   ToposorterStateContext,
 } from "./ToposorterState";
 import { useSelectedNode } from "./Selection";
-import { UIStateContex } from "./ui_state";
+import { UIStateContext } from "./ui_state";
 
 class ArgType<_T> {
   static TNode = new ArgType<TNodeRow>();
   static Id = new ArgType<Id>();
   static string = new ArgType<string>();
+  static parentOrChild = new ArgType<"parent"|"child">();
 }
 
 type TypeOfArgType<T> = T extends ArgType<infer U> ? U : never;
 
 interface ArgsShape {
-  subject?: typeof ArgType.TNode | typeof ArgType.string | typeof ArgType.Id;
-  object?: typeof ArgType.TNode | typeof ArgType.string | typeof ArgType.Id;
+  subject?: typeof ArgType.TNode | typeof ArgType.string | typeof ArgType.Id | typeof ArgType.parentOrChild;
+  object?: typeof ArgType.TNode | typeof ArgType.string | typeof ArgType.Id | typeof ArgType.parentOrChild;
 }
 
 type VariablesFromArgs<A extends ArgsShape> = {
@@ -37,7 +38,7 @@ class Command<A extends ArgsShape> {
       argsShape: A;
       runCommand(
         variables: VariablesFromArgs<A>,
-        stateManager: StateManager
+        stateManager: ToposorterStateManager
       ): void;
     }
   ) {}
@@ -58,9 +59,10 @@ const commands = Object.fromEntries(
       command: "add",
       argsShape: {
         subject: ArgType.Id,
+        object: ArgType.parentOrChild,
       },
       runCommand(args, stateManager) {
-        stateManager.addChild(args.subject);
+        stateManager.add(args.subject, args.object);
       },
     }),
     new Command({
@@ -141,6 +143,9 @@ function mapArg<K extends keyof ArgsShape>(
     if (command.data.argsShape[k] == ArgType.string) {
       variables[k] = arg;
     }
+    if (command.data.argsShape[k] == ArgType.parentOrChild) {
+      variables[k] = arg;
+    }
   };
 }
 
@@ -149,7 +154,7 @@ export function CommandLine() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const setError = useContext(SetErrorContext)!;
-  const stateManager = useContext(StateManagerContext)!;
+  const stateManager = useContext(ToposorterStateManagerContext)!;
   const state = useContext(ToposorterStateContext)!;
 
   const boundVariables = useBoundVariablesFromContext();
@@ -161,32 +166,27 @@ export function CommandLine() {
     const input = e.currentTarget.value;
 
     try {
-      if (input.startsWith("/")) {
-        // 1. parse command
-        const [command, args] = parseCommand(input.slice(1));
+      // 1. parse command
+      const [command, args] = parseCommand(input);
 
-        // 2. make context
-        const variables: Variables = {
-          ...boundVariables,
-        };
+      // 2. make context
+      const variables: Variables = {
+        ...boundVariables,
+      };
 
-        // Maps positional args to variables
-        const mapArgs = [
-          mapArg(command, variables, "subject", state),
-          mapArg(command, variables, "object", state),
-        ];
-        // If subject is bound, we can omit it.
-        if (variables.subject !== undefined) {
-          mapArgs.shift();
-        }
-        for (const [i, arg] of args.entries()) {
-          mapArgs[i](arg);
-        }
-
-        command.data.runCommand(variables, stateManager);
-      } else {
-        stateManager.addNode(input);
+      // Maps positional args to variables
+      const mapArgs = [
+        mapArg(command, variables, "subject", state),
+        mapArg(command, variables, "object", state),
+      ];
+      // If subject is bound, we can omit it.
+      if (variables.subject !== undefined) {
+        mapArgs.shift();
       }
+      for (const [i, arg] of args.entries()) {
+        mapArgs[i](arg);
+      }
+      command.data.runCommand(variables, stateManager);
       setError(null);
       setInput("");
     } catch (e: unknown) {
@@ -216,17 +216,32 @@ export function CommandLine() {
   }, []);
 
   // Set focus on input when the selected node changes.
-  const [selectedNode] = useSelectedNode();
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, [selectedNode]);
+  // const [selectedNode] = useSelectedNode();
+  // useEffect(() => {
+  //   inputRef.current?.focus();
+  // }, [selectedNode]);
 
-
-  const uiState = useContext(UIStateContex)!;
+  const uiState = useContext(UIStateContext)!;
   useEffect(() => {
     uiState.bindCommandLineRef(inputRef);
   }, [inputRef]);
 
+
+  useEffect(() => {
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === '/') {
+        inputRef.current?.focus();
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        inputRef.current?.focus();
+      }
+    };
+  
+    document.addEventListener('keyup', handleKeyUp);
+    return () => {
+      document.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
 
   return (
     <input
