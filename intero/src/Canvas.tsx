@@ -1,5 +1,5 @@
 import {
-  StateManagerContext,
+  ToposorterStateManagerContext,
   TNode,
 } from "./ToposorterState";
 import * as dagre from "@dagrejs/dagre";
@@ -9,8 +9,6 @@ import ReactFlow, {
   Edge,
   Node,
   useReactFlow,
-  Handle,
-  Position,
   useNodesInitialized,
   applyNodeChanges,
   applyEdgeChanges,
@@ -20,55 +18,16 @@ import ReactFlow, {
 } from "reactflow";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import "reactflow/dist/style.css";
-import { UIStateContex } from "./ui_state";
+import { UIStateContext } from "./ui_state";
+import { useSelectedNode } from "./Selection";
+import { CustomNode } from "./CustomNode";
 
 const nodeTypes = {
   custom: CustomNode,
 };
 
-function CustomNode(props: { data: TNode; id: string; selected: boolean }) {
-  let classes = "";
-
-  if (props.data.status === "done") {
-    classes = "bg-slate-800 text-white";
-  } else if (props.data.status === "active") {
-    classes = "bg-slate-500 text-white";
-  } else {
-    classes = "bg-black text-white";
-    classes += " border-dashed";
-  }
-
-  if (props.selected) {
-    classes += " border-2 border-indigo-500";
-  } else {
-    classes += " border-2 border-gray-500";
-  }
-
-  const uiState = useContext(UIStateContex)!;
-  function handleOnClick() {
-    // uiState.focusCommandLine();
-  }
-
-  return (
-    <>
-      <Handle type="target" position={Position.Right} />
-      <div
-        className={` box-content p-2 rounded-2xl ${classes}`}
-        onClick={handleOnClick}
-      >
-        {props.data.value.split("\n")[0]}
-        {/* <div className="font-mono absolute top-[-15px] right-[-25px] text-gray-500 font-bold rounded-full px-2 py-1 text-xs">
-          {chipText}
-        </div> */}
-      </div>
-      <div></div>
-      <Handle type="source" position={Position.Left} />
-    </>
-  );
-}
-
 export function Canvas(props: { nodes: Record<string, TNode> }) {
-  const stateManager = useContext(StateManagerContext)!;
+  const stateManager = useContext(ToposorterStateManagerContext)!;
   const { fitView } = useReactFlow();
   const nodesInitialized = useNodesInitialized();
 
@@ -127,10 +86,13 @@ export function Canvas(props: { nodes: Record<string, TNode> }) {
       return out;
     });
     setEdges(initialEdges);
-    window.requestAnimationFrame(() => {
-      fitView();
-    });
+    // window.requestAnimationFrame(() => {
+    //   fitView();
+    // });
   }, [initialNodes, initialEdges, nodesInitialized]);
+
+  const [, setSelectedNode] = useSelectedNode();
+  const uiState = useContext(UIStateContext)!;
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) =>
@@ -138,6 +100,10 @@ export function Canvas(props: { nodes: Record<string, TNode> }) {
         for (const change of changes) {
           if (change.type === "remove") {
             stateManager.deleteNode(change.id);
+          }
+          if (change.type === "dimensions") {
+            setSelectedNode(change.id);
+            uiState.focusTitle();
           }
         }
         return applyNodeChanges(changes, nds);

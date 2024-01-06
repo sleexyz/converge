@@ -126,10 +126,10 @@ export class ToposorterState {
   getActiveNode(): TNodeRow | null {
     for (let id of Object.keys(this.state.nodes)) {
       if (this.state.nodes[id].status === "active") {
-        return {id, data: this.state.nodes[id]};
+        return { id, data: this.state.nodes[id] };
       }
     }
-    return null
+    return null;
   }
 
   reconcileId(idPrefix: string): TNodeRow {
@@ -145,44 +145,62 @@ export class ToposorterState {
     if (!retId) {
       throw new Error(`Could not find node with prefix ${idPrefix}`);
     }
-    return {id: retId, data: this.state.nodes[retId]};
+    return { id: retId, data: this.state.nodes[retId] };
+  }
+}
+
+export class ToposorterStateManager {
+  constructor(
+    readonly trySetState: (
+      fn: (state: ToposorterStateData) => ToposorterStateData
+    ) => void,
+    readonly stateRef: React.MutableRefObject<ToposorterStateData>
+  ) {}
+
+  state() {
+    return new ToposorterState(this.stateRef.current);
   }
 
-  static setStatus(id: Id, status: string) {
-    return produce((draft: Draft<ToposorterStateData>) => {
-      if (status === "unset") {
-        delete draft.nodes[id].status;
-        return;
+  bindAction<Args extends any[]>(
+    action: (
+      ...args: Args
+    ) => (state: ToposorterStateData) => ToposorterStateData
+  ): (...args: Args) => void {
+    return (...args: Args) => {
+      this.trySetState(action(...args));
+    };
+  }
+
+  addNode = this.bindAction((value?: string) => {
+    return produce((draft: ToposorterStateData) => {
+      const id = uuidv4();
+      draft.nodes[id] = {
+        value: value ?? "",
+        createdAt: new Date(),
+        children: [],
+      };
+    });
+  });
+
+  add = this.bindAction((from: Id, connectionType: "parent" | "child") => {
+    return produce((draft: ToposorterStateData) => {
+      const id = uuidv4();
+      draft.nodes[id] = {
+        value: "",
+        createdAt: new Date(),
+        children: [],
+      };
+      if (connectionType === "child") {
+        draft.nodes[from].children.push(id);
+      } else if (connectionType === "parent") {
+        draft.nodes[id].children.push(from);
+      } else {
+        throw new Error(`Invalid connectionType ${connectionType}`);
       }
-      if (status !== "active" && status !== "done") {
-        throw new Error(
-          `Invalid status ${status}. Expected "active" or "done" or "unset"`
-        );
-      }
-      draft.nodes[id].status = status as "active" | "done";
     });
-  }
+  });
 
-  static setValue(id: Id, value: string) {
-    return produce((draft: Draft<ToposorterStateData>) => {
-      draft.nodes[id].value = value;
-    });
-  }
-
-  static setNotes(id: Id, notes: string) {
-    return produce((draft: Draft<ToposorterStateData>) => {
-      draft.nodes[id].notes = notes;
-    });
-  }
-
-  static deleteEdge(edgeId: Id) {
-    return produce((draft: Draft<ToposorterStateData>) => {
-      const [from, to] = edgeId.split("--");
-      draft.nodes[from].children = draft.nodes[from].children.filter(x => x !== to);
-    });
-  }
-
-  static deleteNode(id: Id) {
+  deleteNode = this.bindAction((id: Id) => {
     return produce((draft: Draft<ToposorterStateData>) => {
       const state = new ToposorterState(original(draft)!);
       let nodes = state.getNodes();
@@ -201,65 +219,52 @@ export class ToposorterState {
         draft.nodes[key].children = newChildren;
       }
     });
-  }
+  });
 
-  static addEdge(from: Id, to: Id) {
+  deleteEdge = this.bindAction((edgeId: Id) => {
+    return produce((draft: Draft<ToposorterStateData>) => {
+      const [from, to] = edgeId.split("--");
+      draft.nodes[from].children = draft.nodes[from].children.filter(
+        (x) => x !== to
+      );
+    });
+  });
+
+  addEdge = this.bindAction((from: Id, to: Id) => {
     return produce((draft: Draft<ToposorterStateData>) => {
       draft.nodes[from].children.push(to);
     });
-  }
+  });
 
-  static addChild(from: Id) {
-    return produce((draft: ToposorterStateData) => {
-      const id = uuidv4();
-      draft.nodes[id] = {
-        value: "Task",
-        createdAt: new Date(),
-        children: [],
-      };
-      draft.nodes[from].children.push(id);
+  setStatus = this.bindAction((id: Id, status: string) => {
+    return produce((draft: Draft<ToposorterStateData>) => {
+      if (status === "unset") {
+        delete draft.nodes[id].status;
+        return;
+      }
+      if (status !== "active" && status !== "done") {
+        throw new Error(
+          `Invalid status ${status}. Expected "active" or "done" or "unset"`
+        );
+      }
+      draft.nodes[id].status = status as "active" | "done";
     });
-  }
+  });
 
-  static addNode(value?: string) {
-    return produce((draft: ToposorterStateData) => {
-      const id = uuidv4();
-      draft.nodes[id] = {
-        value: value ?? "",
-        createdAt: new Date(),
-        children: [],
-      };
+  setValue = this.bindAction((id: Id, value: string) => {
+    return produce((draft: Draft<ToposorterStateData>) => {
+      draft.nodes[id].value = value;
     });
-  }
+  });
+
+  setNotes = this.bindAction((id: Id, notes: string) => {
+    return produce((draft: Draft<ToposorterStateData>) => {
+      draft.nodes[id].notes = notes;
+    });
+  });
 }
 
-export class StateManager {
-  constructor(
-    readonly trySetState: (
-      fn: (state: ToposorterStateData) => ToposorterStateData
-    ) => void
-  ) {}
-
-  bindAction<Args extends any[]>(
-    action: (
-      ...args: Args
-    ) => (state: ToposorterStateData) => ToposorterStateData
-  ): (...args: Args) => void {
-    return (...args: Args) => {
-      this.trySetState(action(...args));
-    };
-  }
-  addNode = this.bindAction(ToposorterState.addNode);
-  addChild = this.bindAction(ToposorterState.addChild);
-  deleteNode = this.bindAction(ToposorterState.deleteNode);
-  deleteEdge = this.bindAction(ToposorterState.deleteEdge);
-  addEdge = this.bindAction(ToposorterState.addEdge);
-  setStatus = this.bindAction(ToposorterState.setStatus);
-  setValue = this.bindAction(ToposorterState.setValue);
-  setNotes = this.bindAction(ToposorterState.setNotes);
-}
-
-export const StateManagerContext = React.createContext<StateManager | null>(
+export const ToposorterStateManagerContext = React.createContext<ToposorterStateManager | null>(
   null
 );
 
@@ -271,9 +276,8 @@ export function useError() {
   return React.useContext(ErrorContext)!;
 }
 
-export const ToposorterStateContext = React.createContext<ToposorterState | null>(
-  null
-);
+export const ToposorterStateContext =
+  React.createContext<ToposorterState | null>(null);
 const ErrorContext = React.createContext<Error | null>(null);
 
 export function ToposorterStateProvider({
@@ -297,8 +301,8 @@ export function ToposorterStateProvider({
   };
 
   const stateManager = React.useMemo(
-    () => new StateManager(trySetState),
-    [trySetState]
+    () => new ToposorterStateManager(trySetState, stateRef),
+    [trySetState, stateRef]
   );
 
   const toposorterState = React.useMemo(() => {
@@ -306,7 +310,7 @@ export function ToposorterStateProvider({
   }, [state]);
 
   return (
-    <StateManagerContext.Provider value={stateManager}>
+    <ToposorterStateManagerContext.Provider value={stateManager}>
       <SetErrorContext.Provider value={setError}>
         <ToposorterStateContext.Provider value={toposorterState}>
           <ErrorContext.Provider value={error}>
@@ -314,6 +318,6 @@ export function ToposorterStateProvider({
           </ErrorContext.Provider>
         </ToposorterStateContext.Provider>
       </SetErrorContext.Provider>
-    </StateManagerContext.Provider>
+    </ToposorterStateManagerContext.Provider>
   );
 }
