@@ -4,11 +4,6 @@ import * as dagre from "@dagrejs/dagre";
 import * as React from "react";
 import { useToposorterState } from "./ToposorterState";
 
-interface CanvasManager {
-  setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
-  setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
-}
-
 export const NodesContext = React.createContext<Node[]>([]);
 export const EdgesContext = React.createContext<Edge[]>([]);
 
@@ -16,9 +11,36 @@ export const CanvasManagerContext = React.createContext<CanvasManager | null>(
   null
 );
 
-export function CanvasController(props: {
-  children: React.ReactNode;
-}) {
+export class CanvasManager {
+  setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
+  setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
+
+  constructor(
+    readonly data: {
+      setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
+      setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
+      initialEdgesRef: React.RefObject<Edge[]>;
+      g: dagre.graphlib.Graph;
+    }
+  ) {
+    this.setNodes = data.setNodes;
+    this.setEdges = data.setEdges;
+  }
+
+
+
+  layoutNodes() {
+    this.data.setNodes((nodes) => {
+      return getLayoutedElements(
+        this.data.g,
+        nodes,
+        this.data.initialEdgesRef.current!
+      ).nodes;
+    });
+  }
+}
+
+export function CanvasController(props: { children: React.ReactNode }) {
   const state = useToposorterState();
   const tNodes = state.getNodes();
   const nodesInitialized = useNodesInitialized();
@@ -48,11 +70,21 @@ export function CanvasController(props: {
     }
     return [initialNodes, initialEdges];
   }, [tNodes]);
+  const initialEdgesRef = React.useRef(initialEdges);
+  const initialNodesRef = React.useRef(initialNodes);
+  React.useEffect(() => {
+    initialEdgesRef.current = initialEdges;
+    initialNodesRef.current = initialNodes;
+  }, [initialEdges, initialNodes]);
 
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
 
-  const canvasManager = useMemo(() => ({ setNodes, setEdges }), [setNodes, setEdges]);
+  const canvasManager = useMemo(
+    () => new CanvasManager({ g, setNodes, setEdges, initialEdgesRef }),
+    // () => ({ setNodes, setEdges}),
+    [g, setNodes, setEdges, initialEdgesRef]
+  );
 
   const [shouldLayout, setShouldLayout] = useState(true);
 

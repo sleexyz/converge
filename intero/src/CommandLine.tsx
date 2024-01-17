@@ -11,6 +11,7 @@ import {
 import { useSelectedNode } from "./Selection";
 import { UIStateContext } from "./ui_state";
 import { useReactFlow } from "reactflow";
+import { CanvasManager, CanvasManagerContext } from "./canvas_controller";
 
 class ArgType<_T> {
   static TNode = new ArgType<TNodeRow>();
@@ -42,6 +43,7 @@ class Command<A extends ArgsShape> {
         ctx: {
           stateManager: ToposorterStateManager,
           fitView: () => void,
+          canvasManager: CanvasManager,
         }
       ): void;
     }
@@ -54,7 +56,8 @@ const commands = Object.fromEntries(
       command: "layout",
       argsShape: {
       },
-      runCommand(_args, {fitView}) {
+      runCommand(_args, {fitView, canvasManager}) {
+        canvasManager.layoutNodes();
         fitView();
       },
     }),
@@ -170,6 +173,7 @@ export function CommandLine() {
   const state = useContext(ToposorterStateContext)!;
 
   const boundVariables = useBoundVariablesFromContext();
+  const canvasManager = useContext(CanvasManagerContext)!;
 
   const { fitView } = useReactFlow();
 
@@ -200,7 +204,7 @@ export function CommandLine() {
       for (const [i, arg] of args.entries()) {
         mapArgs[i](arg);
       }
-      command.data.runCommand(variables, {stateManager, fitView});
+      command.data.runCommand(variables, {stateManager, fitView, canvasManager});
       setError(null);
       setInput("");
     } catch (e: unknown) {
