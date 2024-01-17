@@ -80,7 +80,7 @@ export function Canvas() {
   return (
     <ReactFlow
       proOptions={{ hideAttribution: true }}
-      nodeOrigin={[0.5, 0.5]}
+      nodeOrigin={[0, 0.5]}
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
