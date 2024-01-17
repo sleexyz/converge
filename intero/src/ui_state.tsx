@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Id } from "./ToposorterState";
 
-class UIState {
+export class UIState {
 
     commandLineRef: React.RefObject<HTMLInputElement> | null = null;
     bindCommandLineRef = (ref: React.RefObject<HTMLInputElement> | null) => {

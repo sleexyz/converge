@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { CommandLine } from "./CommandLine";
 import { useSelectedNode } from "./Selection";
 import { UIStateContext } from "./ui_state";
+import { useRefState } from "./state";
 
 export function SelectionPane() {
   const [selectedNode] = useSelectedNode();
@@ -24,8 +25,8 @@ export function SelectionPane() {
 
 function SelectionEditor({ tnode, id }: { tnode: TNode; id: Id }) {
   const stateManager = useContext(ToposorterStateManagerContext)!;
-  const [value, setValue] = useState<string | null>(null);
-  const [notes, setNotes] = useState<string | null>(null);
+  const [value, setValue, valueRef] = useRefState<string | null>(() => null);
+  const [notes, setNotes, notesRef] = useRefState<string | null>(() => null);
 
   // Update nodeValue when selectedNode changes
   useEffect(() => {
@@ -40,7 +41,7 @@ function SelectionEditor({ tnode, id }: { tnode: TNode; id: Id }) {
       setValue(event.target.value);
       stateManager.setValue(id, event.target.value);
     },
-    [stateManager, id]
+    [stateManager,  id]
   );
 
   const handleNotesChange = useCallback(
@@ -67,6 +68,7 @@ function SelectionEditor({ tnode, id }: { tnode: TNode; id: Id }) {
           <input
             value={value || ""}
             onChange={handleValueChange}
+            // onBlur={handleValueBlur}
             placeholder="Title"
             ref={titleRef}
             className="text-left box-content text-2xl rounded-md shadow-sm opacity-80 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-gray-500 border-gray-600 m-0 p-2 border"

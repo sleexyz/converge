@@ -1,7 +1,7 @@
 import { Draft, original, produce } from "immer";
 import * as React from "react";
 import { v4 as uuidv4 } from "uuid";
-import { useLocalStorageState } from "./state";
+import { useLocalStorageState, useMakeStateAsync } from "./state";
 
 export type Id = string;
 
@@ -48,7 +48,7 @@ export function withNormalization(
         }
       );
       for (let id of Toposort.sort(entries)) {
-      // for (let id of entries.map(([id, _node]) => id)) {
+        // for (let id of entries.map(([id, _node]) => id)) {
         (draft.nodes[id] as any) = {};
         Object.assign(draft.nodes[id], state.nodes[id]);
         if (state.nodes[id].createdAt == undefined) {
@@ -66,14 +66,16 @@ export function withNormalization(
         nodeIndicies.set(id, i);
       }
       for (let id of Object.keys(state.nodes)) {
-        draft.nodes[id].children = [...state.nodes[id].children].sort((a, b) => {
-          const aIndex = nodeIndicies.get(a);
-          const bIndex = nodeIndicies.get(b);
-          if (aIndex === undefined || bIndex === undefined) {
-            throw new Error(`Could not find index for ${a} or ${b}`);
+        draft.nodes[id].children = [...state.nodes[id].children].sort(
+          (a, b) => {
+            const aIndex = nodeIndicies.get(a);
+            const bIndex = nodeIndicies.get(b);
+            if (aIndex === undefined || bIndex === undefined) {
+              throw new Error(`Could not find index for ${a} or ${b}`);
+            }
+            return aIndex - bIndex;
           }
-          return aIndex - bIndex;
-        });
+        );
       }
     })(out);
   };
@@ -175,7 +177,7 @@ export class ToposorterStateManager {
   constructor(
     readonly trySetState: (
       fn: (state: ToposorterStateData) => ToposorterStateData
-    ) => void,
+    ) => Promise<void>,
     readonly stateRef: React.MutableRefObject<ToposorterStateData>
   ) {}
 
@@ -187,43 +189,50 @@ export class ToposorterStateManager {
     action: (
       ...args: Args
     ) => (state: ToposorterStateData) => ToposorterStateData
-  ): (...args: Args) => void {
-    return (...args: Args) => {
-      this.trySetState(withNormalization(action(...args)));
+  ): (...args: Args) => Promise<void> {
+    return async (...args: Args) => {
+      await this.trySetState(withNormalization(action(...args)));
     };
   }
 
-  addNode = this.bindAction((value?: string) => {
-    return produce((draft: ToposorterStateData) => {
-      const id = uuidv4();
-      draft.nodes[id] = {
-        value: value ?? "",
-        createdAt: new Date(),
-        children: [],
-      };
-    });
-  });
+  async addNode(value?: string) {
+    const id = uuidv4();
+    await this.bindAction((value?: string) => {
+      return produce((draft: ToposorterStateData) => {
+        draft.nodes[id] = {
+          value: value ?? "",
+          createdAt: new Date(),
+          children: [],
+        };
+      });
+    })(value);
+    return id;
+  }
 
-  add = this.bindAction((from: Id, connectionType: "parent" | "child") => {
-    return produce((draft: ToposorterStateData) => {
-      const id = uuidv4();
-      draft.nodes[id] = {
-        value: "",
-        createdAt: new Date(),
-        children: [],
-      };
-      if (!connectionType) {
-        return;
-      }
-      if (connectionType === "child") {
-        draft.nodes[from].children.push(id);
-      } else if (connectionType === "parent") {
-        draft.nodes[id].children.push(from);
-      } else {
-        throw new Error(`Invalid connectionType ${connectionType}`);
-      }
-    });
-  });
+  // TODO: consolidate with addNode
+  async add(from: Id, connectionType: "parent" | "child") {
+    const id = uuidv4();
+    await this.bindAction((from: Id, connectionType: "parent" | "child") => {
+      return produce((draft: ToposorterStateData) => {
+        draft.nodes[id] = {
+          value: "",
+          createdAt: new Date(),
+          children: [],
+        };
+        if (!connectionType) {
+          return;
+        }
+        if (connectionType === "child") {
+          draft.nodes[from].children.push(id);
+        } else if (connectionType === "parent") {
+          draft.nodes[id].children.push(from);
+        } else {
+          throw new Error(`Invalid connectionType ${connectionType}`);
+        }
+      });
+    })(from, connectionType);
+    return id;
+  }
 
   deleteNode = this.bindAction((id: Id) => {
     return produce((draft: Draft<ToposorterStateData>) => {
@@ -278,6 +287,9 @@ export class ToposorterStateManager {
 
   setValue = this.bindAction((id: Id, value: string) => {
     return produce((draft: Draft<ToposorterStateData>) => {
+      if (draft.nodes[id].value === value) {
+        throw new AbortError();
+      }
       draft.nodes[id].value = value;
     });
   });
@@ -289,9 +301,8 @@ export class ToposorterStateManager {
   });
 }
 
-export const ToposorterStateManagerContext = React.createContext<ToposorterStateManager | null>(
-  null
-);
+export const ToposorterStateManagerContext =
+  React.createContext<ToposorterStateManager | null>(null);
 
 export function useToposorterState() {
   return React.useContext(ToposorterStateContext)!;
@@ -310,19 +321,28 @@ export function ToposorterStateProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [state, setState, stateRef] = useLocalStorageState<ToposorterStateData>(
-    "toposorter",
-    {
-      nodes: {},
-    },
-    withNormalization(x => x),
-  );
+  const [_state, _setState, stateRef] =
+    useLocalStorageState<ToposorterStateData>(
+      "toposorter",
+      {
+        nodes: {},
+      },
+      withNormalization((x) => x)
+    );
+  const [state, setState] = useMakeStateAsync([_state, _setState]);
 
   const [error, setError] = React.useState<null | Error>(null);
-  const trySetState = (
+  const trySetState = async (
     fn: (value: ToposorterStateData) => ToposorterStateData
   ) => {
-    setState(fn(stateRef.current));
+    try {
+      await setState(fn(stateRef.current));
+    } catch (e: unknown) {
+      if (e instanceof AbortError) {
+        return;
+      }
+      throw e;
+    }
   };
 
   const stateManager = React.useMemo(
@@ -345,4 +365,10 @@ export function ToposorterStateProvider({
       </SetErrorContext.Provider>
     </ToposorterStateManagerContext.Provider>
   );
+}
+
+class AbortError extends Error {
+  constructor() {
+    super("Aborted");
+  }
 }

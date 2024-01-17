@@ -35,21 +35,19 @@ export function Canvas() {
   const [, setSelectedNode] = useSelectedNode();
   const uiState = useContext(UIStateContext)!;
 
+
   const onNodesChange: OnNodesChange = useCallback(
     (changes) =>
       canvasManager.setNodes((nds) => {
         for (const change of changes) {
+          // Propagate canvas deletions to state deletions.
           if (change.type === "remove") {
             stateManager.deleteNode(change.id);
-          }
-          if (nodesInitialized && change.type === "dimensions") {
-            setSelectedNode(change.id);
-            uiState.focusTitle();
           }
         }
         return applyNodeChanges(changes, nds);
       }),
-    [canvasManager.setNodes]
+    [canvasManager.setNodes, nodesInitialized, setSelectedNode, uiState]
   );
 
   const onEdgesChange: OnEdgesChange = useCallback(

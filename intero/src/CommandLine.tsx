@@ -11,6 +11,7 @@ import {
 import { useSelectedNode } from "./Selection";
 import { UIStateContext } from "./ui_state";
 import { CanvasManager, CanvasManagerContext } from "./canvas_controller";
+import { ActionManager, ActionManagerContext } from "./action_manager";
 
 class ArgType<_T> {
   static TNode = new ArgType<TNodeRow>();
@@ -42,6 +43,7 @@ class Command<A extends ArgsShape> {
         ctx: {
           stateManager: ToposorterStateManager,
           canvasManager: CanvasManager,
+          actionManager: ActionManager,
         }
       ): void;
     }
@@ -73,8 +75,8 @@ const commands = Object.fromEntries(
         subject: ArgType.Id,
         object: ArgType.parentOrChild,
       },
-      runCommand(args, {stateManager}) {
-        stateManager.add(args.subject, args.object);
+      runCommand(args, {actionManager}) {
+        actionManager.add(args.subject, args.object);
       },
     }),
     new Command({
@@ -167,6 +169,7 @@ export function CommandLine() {
 
   const setError = useContext(SetErrorContext)!;
   const stateManager = useContext(ToposorterStateManagerContext)!;
+  const actionManager = useContext(ActionManagerContext)!;
   const state = useContext(ToposorterStateContext)!;
 
   const boundVariables = useBoundVariablesFromContext();
@@ -199,7 +202,7 @@ export function CommandLine() {
       for (const [i, arg] of args.entries()) {
         mapArgs[i](arg);
       }
-      command.data.runCommand(variables, {stateManager, canvasManager});
+      command.data.runCommand(variables, {actionManager, stateManager, canvasManager});
       setError(null);
       setInput("");
     } catch (e: unknown) {

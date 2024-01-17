@@ -55,3 +55,35 @@ function parseJSON<T>(json: string): T {
   }
 }
 
+
+export function useMakeStateAsync<T>([state, _setState]: [T, React.Dispatch<React.SetStateAction<T>>]) {
+  const resolveQueueRef = React.useRef<(() => void)[]>([]);
+  function pushQueue(resolve: () => void) {
+    resolveQueueRef.current.push(resolve);
+  }
+  function resetQueue() {
+    resolveQueueRef.current = [];
+  }
+  function consumeQueue() {
+    const queue = resolveQueueRef.current;
+    resetQueue();
+    for (const resolve of queue) {
+      resolve();
+    }
+  }
+
+  React.useEffect(() => {
+    consumeQueue();
+  }, [state]);
+
+  const setState = React.useCallback(
+    (newState: React.SetStateAction<T>) => {
+      _setState(newState);
+      return new Promise<void>((resolve) => {
+        pushQueue(resolve);
+      });
+    },
+    [_setState, resolveQueueRef]
+  );
+  return [state, setState] as const;
+}

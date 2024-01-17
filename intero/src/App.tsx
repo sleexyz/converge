@@ -13,6 +13,7 @@ import { SelectionProvider, useSelectedNode } from "./Selection";
 import { ActivityLogProvider, useSyncActivityState } from "./activity";
 import { useEffect } from "react";
 import { CanvasController } from "./canvas_controller";
+import { ActionManagerProvider } from "./action_manager";
 
 function App() {
   useGlobalShortcut();
@@ -24,7 +25,9 @@ function App() {
           <ActivityLogProvider>
             <SelectionProvider>
               <CanvasController>
-                <ToposorterView />
+                <ActionManagerProvider>
+                  <ToposorterView />
+                </ActionManagerProvider>
               </CanvasController>
             </SelectionProvider>
           </ActivityLogProvider>

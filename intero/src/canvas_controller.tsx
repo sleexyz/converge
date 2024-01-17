@@ -8,8 +8,9 @@ import {
 } from "reactflow";
 import * as dagre from "@dagrejs/dagre";
 import * as React from "react";
-import { TNodeRow, useToposorterState } from "./ToposorterState";
+import { Id, TNodeRow, useToposorterState } from "./ToposorterState";
 import { SelectedNodeRefContext } from "./Selection";
+import { useMakeStateAsync } from "./state";
 
 export const NodesContext = React.createContext<Node[]>([]);
 export const EdgesContext = React.createContext<Edge[]>([]);
@@ -18,46 +19,12 @@ export const CanvasManagerContext = React.createContext<CanvasManager | null>(
   null
 );
 
-function useStateAsync<T>(initial: T) {
-  const [state, _setState] = useState(initial);
-
-  const resolveQueueRef = React.useRef<(() => void)[]>([]);
-  function pushQueue(resolve: () => void) {
-    resolveQueueRef.current.push(resolve);
-  }
-  function resetQueue() {
-    resolveQueueRef.current = [];
-  }
-  function consumeQueue() {
-    const queue = resolveQueueRef.current;
-    resetQueue();
-    for (const resolve of queue) {
-      resolve();
-    }
-  }
-
-  React.useEffect(() => {
-    consumeQueue();
-  }, [state]);
-
-  const setState = React.useCallback(
-    (newState: React.SetStateAction<T>) => {
-      _setState(newState);
-      return new Promise<void>((resolve) => {
-        pushQueue(resolve);
-      });
-    },
-    [_setState, resolveQueueRef]
-  );
-  return [state, setState] as const;
-}
-
 export class CanvasManager {
   setNodes: (action: React.SetStateAction<Node[]>) => Promise<void>;
   setEdges: (action: React.SetStateAction<Edge[]>) => Promise<void>;
 
   constructor(
-    readonly data: {
+    private readonly data: {
       setNodes: (action: React.SetStateAction<Node[]>) => Promise<void>;
       setEdges: (action: React.SetStateAction<Edge[]>) => Promise<void>;
       initialEdgesRef: React.RefObject<Edge[]>;
@@ -75,21 +42,16 @@ export class CanvasManager {
     await setNodes((nodes) => {
       return getLayoutedElements(g, nodes, initialEdgesRef.current!).nodes;
     });
-    this.centerSelected();
   }
 
-  private centerSelected() {
-    const { reactFlow, selectedNodeRef } = this.data;
-    if (!selectedNodeRef.current) {
-      return;
-    }
-    console.log("fitting view", reactFlow, selectedNodeRef.current.id);
-    reactFlow.fitView({
-      nodes: [{ id: selectedNodeRef.current.id }],
+  center(id: Id) {
+    const { reactFlow } = this.data;
+    console.log(reactFlow.fitView({
+      nodes: [{ id: id }],
       minZoom: 1,
       maxZoom: 1,
       duration: 800,
-    });
+    }));
   }
 }
 
@@ -130,11 +92,13 @@ export function CanvasController(props: { children: React.ReactNode }) {
     initialNodesRef.current = initialNodes;
   }, [initialEdges, initialNodes]);
 
-  const [nodes, setNodes] = useStateAsync<Node[]>(initialNodes);
-  const [edges, setEdges] = useStateAsync<Edge[]>(initialEdges);
+  const [nodes, setNodes] = useMakeStateAsync(useState<Node[]>(initialNodes));
+  const [edges, setEdges] = useMakeStateAsync(useState<Edge[]>(initialEdges));
   const reactFlow = useReactFlow();
 
   const selectedNodeRef = React.useContext(SelectedNodeRefContext)!;
+
+  // const [shouldRelayout, setShouldRelayout, shouldRelayoutRef] = useRefState(() => true);
 
   const canvasManager = useMemo(
     () => {
@@ -145,21 +109,21 @@ export function CanvasController(props: { children: React.ReactNode }) {
         reactFlow,
         initialEdgesRef,
         selectedNodeRef,
+        // shouldRelayoutRef,
+        // setShouldRelayout,
       });
     },
     [g, setNodes, setEdges, reactFlow, initialEdgesRef, selectedNodeRef]
   );
 
-  const [isInitialPass, setIsInitialPass] = useState(true);
 
-  // Effect:
+  // Canvas gets synced to upstream state:
   // - Loads initial nodes from upstream state.
   // - Updates canvas nodes from upstream changes.
   React.useEffect(() => {
     if (!nodesInitialized) {
       return;
     }
-
     setNodes((nodes) => {
       let obj = Object.fromEntries(initialNodes.map((node) => [node.id, node]));
       let overwrite = Object.fromEntries(
@@ -177,9 +141,6 @@ export function CanvasController(props: { children: React.ReactNode }) {
       );
       return Object.values({ ...obj, ...overwrite });
     });
-
-    canvasManager.layoutNodes();
-    setIsInitialPass(false);
     setEdges(initialEdges);
   }, [initialNodes, initialEdges, nodesInitialized]);
 
