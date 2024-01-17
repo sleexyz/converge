@@ -38,7 +38,9 @@ function ToposorterView() {
   const error = useError();
 
   useSyncActivityState();
-  useSelectActiveOnWake();
+  useSelectActiveOnWake({
+    onWake: false,
+  });
 
   return (
     <div className="absolute bg-black bg-opacity-50 h-full w-full flex justify-start items-start">
@@ -62,7 +64,7 @@ function ToposorterView() {
   );
 }
 
-function useSelectActiveOnWake() {
+function useSelectActiveOnWake({ onWake }: { onWake: boolean }) {
   const state = useToposorterState();
   const activeNode = state.getActiveNode();
   const [, setSelectedNode] = useSelectedNode();
@@ -76,6 +78,9 @@ function useSelectActiveOnWake() {
   }, []);
 
   useEffect(() => {
+    if (onWake) {
+      return () => {};
+    }
     function onVisibilityChange() {
       if (!document.hidden) {
         startView();
