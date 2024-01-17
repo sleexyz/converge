@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Edge, Node, useNodesInitialized } from "reactflow";
+import { Edge, Node, useNodesInitialized, useReactFlow } from "reactflow";
 import * as dagre from "@dagrejs/dagre";
 import * as React from "react";
 import { useToposorterState } from "./ToposorterState";
@@ -21,6 +21,7 @@ export class CanvasManager {
       setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
       initialEdgesRef: React.RefObject<Edge[]>;
       g: dagre.graphlib.Graph;
+      fitView: () => void;
     }
   ) {
     this.setNodes = data.setNodes;
@@ -37,6 +38,7 @@ export class CanvasManager {
         this.data.initialEdgesRef.current!
       ).nodes;
     });
+    this.data.fitView();
   }
 }
 
@@ -79,9 +81,10 @@ export function CanvasController(props: { children: React.ReactNode }) {
 
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
+  const { fitView } = useReactFlow();
 
   const canvasManager = useMemo(
-    () => new CanvasManager({ g, setNodes, setEdges, initialEdgesRef }),
+    () => new CanvasManager({ g, setNodes, setEdges, fitView, initialEdgesRef }),
     // () => ({ setNodes, setEdges}),
     [g, setNodes, setEdges, initialEdgesRef]
   );

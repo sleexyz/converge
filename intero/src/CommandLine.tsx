@@ -42,7 +42,6 @@ class Command<A extends ArgsShape> {
         variables: VariablesFromArgs<A>,
         ctx: {
           stateManager: ToposorterStateManager,
-          fitView: () => void,
           canvasManager: CanvasManager,
         }
       ): void;
@@ -56,9 +55,8 @@ const commands = Object.fromEntries(
       command: "layout",
       argsShape: {
       },
-      runCommand(_args, {fitView, canvasManager}) {
+      runCommand(_args, {canvasManager}) {
         canvasManager.layoutNodes();
-        fitView();
       },
     }),
     new Command({
@@ -175,8 +173,6 @@ export function CommandLine() {
   const boundVariables = useBoundVariablesFromContext();
   const canvasManager = useContext(CanvasManagerContext)!;
 
-  const { fitView } = useReactFlow();
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== "Enter") {
       return;
@@ -204,7 +200,7 @@ export function CommandLine() {
       for (const [i, arg] of args.entries()) {
         mapArgs[i](arg);
       }
-      command.data.runCommand(variables, {stateManager, fitView, canvasManager});
+      command.data.runCommand(variables, {stateManager, canvasManager});
       setError(null);
       setInput("");
     } catch (e: unknown) {
