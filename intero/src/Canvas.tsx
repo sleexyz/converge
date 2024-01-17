@@ -1,27 +1,21 @@
-import {
-  ToposorterStateManagerContext,
-  TNode,
-} from "./ToposorterState";
-import * as dagre from "@dagrejs/dagre";
+import { ToposorterStateManagerContext } from "./ToposorterState";
 import ReactFlow, {
   Background,
   Controls,
-  Edge,
-  Node,
-  useReactFlow,
-  useNodesInitialized,
   applyNodeChanges,
   applyEdgeChanges,
   OnNodesChange,
   OnEdgesChange,
   BackgroundVariant,
 } from "reactflow";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext } from "react";
 import "reactflow/dist/style.css";
-import { UIStateContext } from "./ui_state";
-import { useSelectedNode } from "./Selection";
 import { CustomNode } from "./CustomNode";
-import { CanvasManagerContext, EdgesContext, NodesContext } from "./canvas_controller";
+import {
+  CanvasManagerContext,
+  EdgesContext,
+  NodesContext,
+} from "./canvas_controller";
 
 const nodeTypes = {
   custom: CustomNode,
@@ -30,35 +24,30 @@ const nodeTypes = {
 export function Canvas() {
   const nodes = useContext(NodesContext);
   const edges = useContext(EdgesContext);
-  const {
-    setNodes,
-    setEdges
-  } = useContext(CanvasManagerContext)!;
+  const canvasManager = useContext(CanvasManagerContext)!;
 
   const stateManager = useContext(ToposorterStateManagerContext)!;
-  const [, setSelectedNode] = useSelectedNode();
-  const uiState = useContext(UIStateContext)!;
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) =>
-      setNodes((nds) => {
+      canvasManager.setNodes((nds) => {
         for (const change of changes) {
           if (change.type === "remove") {
             stateManager.deleteNode(change.id);
           }
           if (change.type === "dimensions") {
-            setSelectedNode(change.id);
-            uiState.focusTitle();
+            // setSelectedNode(change.id);
+            // uiState.focusTitle();
           }
         }
         return applyNodeChanges(changes, nds);
       }),
-    [setNodes]
+    [canvasManager.setNodes]
   );
 
   const onEdgesChange: OnEdgesChange = useCallback(
     (changes) =>
-      setEdges((eds) => {
+      canvasManager.setEdges((eds) => {
         for (const change of changes) {
           if (change.type === "remove") {
             stateManager.deleteEdge(change.id);
@@ -66,7 +55,7 @@ export function Canvas() {
         }
         return applyEdgeChanges(changes, eds);
       }),
-    [setEdges]
+    [canvasManager.setEdges]
   );
 
   const onConnect = useCallback(
@@ -84,6 +73,7 @@ export function Canvas() {
   return (
     <ReactFlow
       proOptions={{ hideAttribution: true }}
+      nodeOrigin={[0.5, 0.5]}
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
@@ -91,7 +81,6 @@ export function Canvas() {
       onEdgesChange={onEdgesChange}
       onConnect={onConnect}
       nodesDraggable
-      fitView
     >
       <Background
         color="white"

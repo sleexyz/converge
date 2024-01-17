@@ -1,31 +1,33 @@
-import { SetStateAction, createContext, useCallback, useContext, useMemo, useState } from "react";
+import { SetStateAction, createContext, useCallback, useContext, useMemo } from "react";
 import { useOnSelectionChange, useStoreApi } from "reactflow";
 import { Id, TNodeRow, ToposorterStateManagerContext } from "./ToposorterState";
+import { useRefState } from "./state";
 
 const SelectedNodeContext = createContext<[TNodeRow, React.Dispatch<SetStateAction<Id|null>>] | null>(null);
 
 export function SelectionProvider({ children }: { children: React.ReactNode }) {
   const toposorterStateManager = useContext(ToposorterStateManagerContext)!;
 
-  const [selectedNode, setSelectedNodeRaw] = useState<TNodeRow |null>(null);
+  const [selectedNode, _setSelectedNode, selectedNodeRef] = useRefState<TNodeRow |null>(() => null);
 
   const store = useStoreApi();
  
 
   const setSelectedNode = useCallback((id: Id | null) => {
     if (!id) {
-      setSelectedNodeRaw(null);
+      _setSelectedNode(null);
       return;
     }
     const row = {
       data: toposorterStateManager.state().getNode(id),
       id,
     };
-    setSelectedNodeRaw(row);
-    const { addSelectedNodes, resetSelectedElements } = store.getState();
+    _setSelectedNode(row);
+    console.log("selected node", row);
+    const { addSelectedNodes } = store.getState();
     // resetSelectedElements();
     addSelectedNodes([id]);
-  }, [setSelectedNodeRaw, toposorterStateManager]);
+  }, [_setSelectedNode, toposorterStateManager]);
 
   useOnSelectionChange({
     onChange: ({ nodes }) => {
@@ -48,10 +50,14 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <SelectedNodeContext.Provider value={ret}>
-      {children}
+      <SelectedNodeRefContext.Provider value={selectedNodeRef}>
+        {children}
+      </SelectedNodeRefContext.Provider>
     </SelectedNodeContext.Provider>
   );
 }
+
+export const SelectedNodeRefContext = createContext<React.MutableRefObject<TNodeRow | null> | null>(null);
 
 export function useSelectedNode() {
   return useContext(SelectedNodeContext)!;

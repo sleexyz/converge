@@ -10,7 +10,6 @@ import {
 } from "./ToposorterState";
 import { useSelectedNode } from "./Selection";
 import { UIStateContext } from "./ui_state";
-import { useReactFlow } from "reactflow";
 import { CanvasManager, CanvasManagerContext } from "./canvas_controller";
 
 class ArgType<_T> {
