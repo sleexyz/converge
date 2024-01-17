@@ -60,5 +60,5 @@ pub fn open_widget_window(app: &AppHandle) {
 fn open_panel(handle: &AppHandle<Wry>) {
   let panel = handle.get_panel("widget").unwrap();
   panel.show();
-  panel.set_key_window_able2(false);
+  panel.set_key_window_able(false);
 }

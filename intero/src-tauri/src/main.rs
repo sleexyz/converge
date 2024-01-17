@@ -79,7 +79,7 @@ fn open_panel(handle: &AppHandle<Wry>) {
   position_window_fullscreen(&window, 1.0);
   let panel = handle.get_panel("main").unwrap();
   panel.show();
-  panel.set_key_window_able2(true);
+  panel.set_key_window_able(true);
   panel.make_key_window();
 }
 
