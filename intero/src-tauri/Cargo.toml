@@ -13,8 +13,8 @@ edition = "2021"
 tauri-build = { version = "1.5", features = [] }
 
 [dependencies]
-tauri = { version = "1.5", features = [ "dialog-all", "global-shortcut-all", "window-all", "system-tray", "macos-private-api", "shell-open"] }
-tauri-nspanel = { path = "../../tauri-nspanel" }
+tauri = { version = "1.5.4", features = [ "dialog-all", "global-shortcut-all", "window-all", "system-tray", "macos-private-api", "shell-open"] }
+tauri-nspanel = { git = "https://github.com/sleexyz/tauri-nspanel", rev = "aa9218e4c26d75c293847c2549056f1fbd30a0cc" }
 tauri-plugin-store = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 tauri-plugin-autostart = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 serde = { version = "1.0", features = ["derive"] }
