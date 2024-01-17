@@ -88,7 +88,7 @@ export class CanvasManager {
       nodes: [{ id: selectedNodeRef.current.id }],
       minZoom: 1,
       maxZoom: 1,
-      // duration: 800,
+      duration: 800,
     });
   }
 }
