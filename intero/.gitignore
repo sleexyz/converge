@@ -25,3 +25,4 @@ dist-ssr
 
 # other
 public/assets/*
+.vite
