@@ -12,6 +12,7 @@ import { SelectionPane } from "./SelectionPane";
 import { SelectionProvider, useSelectedNode } from "./Selection";
 import { ActivityLogProvider, useSyncActivityState } from "./activity";
 import { useEffect } from "react";
+import { CanvasController } from "./canvas_controller";
 
 function App() {
   useGlobalShortcut();
@@ -22,7 +23,9 @@ function App() {
         <ToposorterStateProvider>
           <ActivityLogProvider>
             <SelectionProvider>
-              <ToposorterView />
+              <CanvasController>
+                <ToposorterView />
+              </CanvasController>
             </SelectionProvider>
           </ActivityLogProvider>
         </ToposorterStateProvider>
@@ -32,7 +35,6 @@ function App() {
 }
 
 function ToposorterView() {
-  const state = useToposorterState();
   const error = useError();
 
   useSyncActivityState();
@@ -41,7 +43,7 @@ function ToposorterView() {
   return (
     <div className="absolute bg-black bg-opacity-50 h-full w-full flex justify-start items-start">
       <div className="flex-1 flex flex-col items-start m-[3%] space-y-8 p-8 w-[94%] rounded-xl h-[94%] bg-black">
-        <Canvas nodes={state.getNodes()} />
+        <Canvas />
       </div>
       <div className="flex-0 flex-grow-0 flex-shrink flex flex-col items-start m-[3%] w-[600px] space-y-8 rounded-xl h-[94%]">
       {error && (

@@ -21,70 +21,21 @@ import "reactflow/dist/style.css";
 import { UIStateContext } from "./ui_state";
 import { useSelectedNode } from "./Selection";
 import { CustomNode } from "./CustomNode";
+import { CanvasManagerContext, EdgesContext, NodesContext } from "./canvas_controller";
 
 const nodeTypes = {
   custom: CustomNode,
 };
 
-export function Canvas(props: { nodes: Record<string, TNode> }) {
+export function Canvas() {
+  const nodes = useContext(NodesContext);
+  const edges = useContext(EdgesContext);
+  const {
+    setNodes,
+    setEdges
+  } = useContext(CanvasManagerContext)!;
+
   const stateManager = useContext(ToposorterStateManagerContext)!;
-  const nodesInitialized = useNodesInitialized();
-
-  const g = useMemo(
-    () => new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({})),
-    []
-  );
-
-  const [initialNodes, initialEdges] = useMemo(() => {
-    const initialNodes = [];
-    const initialEdges = [];
-    for (const [id, node] of Object.entries(props.nodes)) {
-      initialNodes.push({
-        id,
-        type: "custom",
-        data: { ...node, id },
-        position: { x: 0, y: 0 },
-      });
-      initialEdges.push(
-        ...node.children.map((child) => ({
-          id: `${id}--${child}`,
-          source: id,
-          target: child,
-        }))
-      );
-    }
-    return [initialNodes, initialEdges];
-  }, [props.nodes]);
-
-  const [nodes, setNodes] = useState<Node[]>(initialNodes);
-  const [edges, setEdges] = useState<Edge[]>(initialEdges);
-
-  useEffect(() => {
-    if (!nodesInitialized) {
-      return;
-    }
-    setNodes((nodes) => {
-      let obj = Object.fromEntries(initialNodes.map((node) => [node.id, node]));
-      let overwrite = Object.fromEntries(
-        nodes
-          .filter((node) => node.id in obj)
-          .map((node) => [
-            node.id,
-            {
-              // Keep position and other data.
-              ...node,
-              // Carry updated data over.
-              ...{ data: obj[node.id].data },
-            },
-          ])
-      );
-      let out = Object.values({ ...obj, ...overwrite });
-      out = getLayoutedElements(g, out, initialEdges).nodes;
-      return out;
-    });
-    setEdges(initialEdges);
-  }, [initialNodes, initialEdges, nodesInitialized]);
-
   const [, setSelectedNode] = useSelectedNode();
   const uiState = useContext(UIStateContext)!;
 
@@ -152,36 +103,4 @@ export function Canvas(props: { nodes: Record<string, TNode> }) {
       <Controls className="invert" />
     </ReactFlow>
   );
-}
-
-function getLayoutedElements(
-  g: dagre.graphlib.Graph,
-  nodes: Node[],
-  edges: Edge[],
-) {
-  g.setGraph({ 
-    rankdir: 'RL',
-    align: 'UL',
-    ranker: "tight-tree",
-    // ranker: 'longest-path',
-    esep: 10,
-    disableOptimalOrderHeuristic: true,
-  });
-
-  edges.forEach((edge) => g.setEdge(edge.source, edge.target));
-  nodes.forEach((node) => g.setNode(node.id, node as any));
-  dagre.layout(g);
-  return {
-    nodes: nodes.map((node) => {
-      const dagreNode = g.node(node.id);
-      return {
-        ...node,
-        position: {
-          x: dagreNode.x,
-          y: dagreNode.y,
-        },
-      };
-    }),
-    edges,
-  };
 }
