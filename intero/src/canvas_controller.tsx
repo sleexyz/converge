@@ -152,8 +152,9 @@ export function CanvasController(props: { children: React.ReactNode }) {
 
   const [isInitialPass, setIsInitialPass] = useState(true);
 
-  // initial layout:
-  // updates canvas nodes from upstream changes
+  // Effect:
+  // - Loads initial nodes from upstream state.
+  // - Updates canvas nodes from upstream changes.
   React.useEffect(() => {
     if (!nodesInitialized) {
       return;
@@ -177,11 +178,9 @@ export function CanvasController(props: { children: React.ReactNode }) {
       return Object.values({ ...obj, ...overwrite });
     });
 
-    if (isInitialPass) {
-      canvasManager.layoutNodes();
-      setIsInitialPass(false);
-      setEdges(initialEdges);
-    }
+    canvasManager.layoutNodes();
+    setIsInitialPass(false);
+    setEdges(initialEdges);
   }, [initialNodes, initialEdges, nodesInitialized]);
 
   return (

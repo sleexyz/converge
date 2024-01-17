@@ -7,6 +7,7 @@ import ReactFlow, {
   OnNodesChange,
   OnEdgesChange,
   BackgroundVariant,
+  useNodesInitialized,
 } from "reactflow";
 import { useCallback, useContext } from "react";
 import "reactflow/dist/style.css";
@@ -16,6 +17,8 @@ import {
   EdgesContext,
   NodesContext,
 } from "./canvas_controller";
+import { useSelectedNode } from "./Selection";
+import { UIStateContext } from "./ui_state";
 
 const nodeTypes = {
   custom: CustomNode,
@@ -27,6 +30,10 @@ export function Canvas() {
   const canvasManager = useContext(CanvasManagerContext)!;
 
   const stateManager = useContext(ToposorterStateManagerContext)!;
+  const nodesInitialized = useNodesInitialized();
+
+  const [, setSelectedNode] = useSelectedNode();
+  const uiState = useContext(UIStateContext)!;
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) =>
@@ -35,9 +42,9 @@ export function Canvas() {
           if (change.type === "remove") {
             stateManager.deleteNode(change.id);
           }
-          if (change.type === "dimensions") {
-            // setSelectedNode(change.id);
-            // uiState.focusTitle();
+          if (nodesInitialized && change.type === "dimensions") {
+            setSelectedNode(change.id);
+            uiState.focusTitle();
           }
         }
         return applyNodeChanges(changes, nds);
