@@ -28,7 +28,6 @@ const nodeTypes = {
 
 export function Canvas(props: { nodes: Record<string, TNode> }) {
   const stateManager = useContext(ToposorterStateManagerContext)!;
-  const { fitView } = useReactFlow();
   const nodesInitialized = useNodesInitialized();
 
   const g = useMemo(
@@ -80,15 +79,10 @@ export function Canvas(props: { nodes: Record<string, TNode> }) {
           ])
       );
       let out = Object.values({ ...obj, ...overwrite });
-      out = getLayoutedElements(g, out, initialEdges, {
-        rankdir: "RL",
-      }).nodes;
+      out = getLayoutedElements(g, out, initialEdges).nodes;
       return out;
     });
     setEdges(initialEdges);
-    // window.requestAnimationFrame(() => {
-    //   fitView();
-    // });
   }, [initialNodes, initialEdges, nodesInitialized]);
 
   const [, setSelectedNode] = useSelectedNode();
@@ -164,11 +158,15 @@ function getLayoutedElements(
   g: dagre.graphlib.Graph,
   nodes: Node[],
   edges: Edge[],
-  options: {
-    rankdir: "TB" | "BT" | "LR" | "RL";
-  }
 ) {
-  g.setGraph({ rankdir: options.rankdir });
+  g.setGraph({ 
+    rankdir: 'RL',
+    align: 'UL',
+    ranker: "tight-tree",
+    // ranker: 'longest-path',
+    esep: 10,
+    disableOptimalOrderHeuristic: true,
+  });
 
   edges.forEach((edge) => g.setEdge(edge.source, edge.target));
   nodes.forEach((node) => g.setNode(node.id, node as any));

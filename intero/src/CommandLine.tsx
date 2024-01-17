@@ -10,6 +10,7 @@ import {
 } from "./ToposorterState";
 import { useSelectedNode } from "./Selection";
 import { UIStateContext } from "./ui_state";
+import { useReactFlow } from "reactflow";
 
 class ArgType<_T> {
   static TNode = new ArgType<TNodeRow>();
@@ -38,7 +39,10 @@ class Command<A extends ArgsShape> {
       argsShape: A;
       runCommand(
         variables: VariablesFromArgs<A>,
-        stateManager: ToposorterStateManager
+        ctx: {
+          stateManager: ToposorterStateManager,
+          fitView: () => void,
+        }
       ): void;
     }
   ) {}
@@ -47,11 +51,19 @@ class Command<A extends ArgsShape> {
 const commands = Object.fromEntries(
   [
     new Command({
+      command: "layout",
+      argsShape: {
+      },
+      runCommand(_args, {fitView}) {
+        fitView();
+      },
+    }),
+    new Command({
       command: "delete",
       argsShape: {
         subject: ArgType.Id,
       },
-      runCommand(args, stateManager) {
+      runCommand(args, {stateManager}) {
         stateManager.deleteNode(args.subject);
       },
     }),
@@ -61,7 +73,7 @@ const commands = Object.fromEntries(
         subject: ArgType.Id,
         object: ArgType.parentOrChild,
       },
-      runCommand(args, stateManager) {
+      runCommand(args, {stateManager}) {
         stateManager.add(args.subject, args.object);
       },
     }),
@@ -71,7 +83,7 @@ const commands = Object.fromEntries(
         subject: ArgType.Id,
         object: ArgType.Id,
       },
-      runCommand(args, stateManager) {
+      runCommand(args, {stateManager}) {
         stateManager.addEdge(args.subject, args.object);
       },
     }),
@@ -81,7 +93,7 @@ const commands = Object.fromEntries(
         subject: ArgType.Id,
         object: ArgType.string,
       },
-      runCommand(args, stateManager) {
+      runCommand(args, {stateManager}) {
         stateManager.setStatus(args.subject, args.object);
       },
     }),
@@ -90,7 +102,7 @@ const commands = Object.fromEntries(
       argsShape: {
         subject: ArgType.Id,
       },
-      runCommand(args, stateManager) {
+      runCommand(args, {stateManager}) {
         stateManager.setStatus(args.subject, "done");
       },
     }),
@@ -99,7 +111,7 @@ const commands = Object.fromEntries(
       argsShape: {
         subject: ArgType.Id,
       },
-      runCommand(args, stateManager) {
+      runCommand(args, {stateManager}) {
         stateManager.setStatus(args.subject, "active");
       },
     }),
@@ -159,6 +171,8 @@ export function CommandLine() {
 
   const boundVariables = useBoundVariablesFromContext();
 
+  const { fitView } = useReactFlow();
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== "Enter") {
       return;
@@ -186,7 +200,7 @@ export function CommandLine() {
       for (const [i, arg] of args.entries()) {
         mapArgs[i](arg);
       }
-      command.data.runCommand(variables, stateManager);
+      command.data.runCommand(variables, {stateManager, fitView});
       setError(null);
       setInput("");
     } catch (e: unknown) {
