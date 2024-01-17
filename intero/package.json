@@ -10,7 +10,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@dagrejs/dagre": "^1.0.4",
+    "@dagrejs/dagre": "github:futpib/dagre#order-options",
     "@pixi/filter-advanced-bloom": "^5.1.1",
     "@pixi/filter-crt": "^5.1.1",
     "@pixi/react": "^7.1.1",

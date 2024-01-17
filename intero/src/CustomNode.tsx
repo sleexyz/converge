@@ -16,7 +16,7 @@ export function CustomNode(props: { data: TNode; id: string; selected: boolean }
     }
   
     if (props.selected) {
-      classes += " border-2 border-indigo-500";
+      classes += " border-2 border-pink-500";
     } else {
       classes += " border-2 border-gray-500";
     }
@@ -34,6 +34,8 @@ export function CustomNode(props: { data: TNode; id: string; selected: boolean }
       classes += " italic";
     }
 
+    const chipText = props.id.slice(0, 4);
+
     return (
       <>
         <Handle type="target" position={Position.Right} />
@@ -42,9 +44,9 @@ export function CustomNode(props: { data: TNode; id: string; selected: boolean }
           onClick={handleOnClick}
         >
           {title}
-          {/* <div className="font-mono absolute top-[-15px] right-[-25px] text-gray-500 font-bold rounded-full px-2 py-1 text-xs">
+          <div className="font-mono absolute top-[-15px] right-[-25px] text-gray-500 font-bold rounded-full px-2 py-1 text-xs">
             {chipText}
-          </div> */}
+          </div>
         </div>
         <div></div>
         <Handle type="source" position={Position.Left} />

@@ -16,7 +16,7 @@ export interface TNode {
 function statusToPoints(status: "active" | "done" | undefined): number {
   switch (status) {
     case "done":
-      return 2;
+      return -1;
     case "active":
       return 1;
     default:
@@ -28,7 +28,8 @@ export function withNormalization(
   fn: (state: ToposorterStateData) => ToposorterStateData = (state) => state
 ) {
   return (state: ToposorterStateData) => {
-    return produce((draft: Draft<ToposorterStateData>) => {
+    // sort nodes
+    let out = produce((draft: Draft<ToposorterStateData>) => {
       const state = original(draft)!;
       draft.nodes = {};
       const entries = Object.entries(state.nodes).sort(
@@ -47,13 +48,34 @@ export function withNormalization(
         }
       );
       for (let id of Toposort.sort(entries)) {
+      // for (let id of entries.map(([id, _node]) => id)) {
         (draft.nodes[id] as any) = {};
         Object.assign(draft.nodes[id], state.nodes[id]);
         if (state.nodes[id].createdAt == undefined) {
           draft.nodes[id].createdAt = new Date();
         }
       }
+      window.nodes = draft.nodes;
     })(fn(state));
+
+    // sort edges based on node order
+    return produce((draft: Draft<ToposorterStateData>) => {
+      const state = original(draft)!;
+      const nodeIndicies = new Map<string, number>();
+      for (let [i, id] of Object.keys(state.nodes).entries()) {
+        nodeIndicies.set(id, i);
+      }
+      for (let id of Object.keys(state.nodes)) {
+        draft.nodes[id].children = [...state.nodes[id].children].sort((a, b) => {
+          const aIndex = nodeIndicies.get(a);
+          const bIndex = nodeIndicies.get(b);
+          if (aIndex === undefined || bIndex === undefined) {
+            throw new Error(`Could not find index for ${a} or ${b}`);
+          }
+          return aIndex - bIndex;
+        });
+      }
+    })(out);
   };
 }
 
@@ -167,7 +189,7 @@ export class ToposorterStateManager {
     ) => (state: ToposorterStateData) => ToposorterStateData
   ): (...args: Args) => void {
     return (...args: Args) => {
-      this.trySetState(action(...args));
+      this.trySetState(withNormalization(action(...args)));
     };
   }
 
@@ -190,6 +212,9 @@ export class ToposorterStateManager {
         createdAt: new Date(),
         children: [],
       };
+      if (!connectionType) {
+        return;
+      }
       if (connectionType === "child") {
         draft.nodes[from].children.push(id);
       } else if (connectionType === "parent") {
@@ -290,7 +315,7 @@ export function ToposorterStateProvider({
     {
       nodes: {},
     },
-    produce((_draft: Draft<ToposorterStateData>) => {})
+    withNormalization(x => x),
   );
 
   const [error, setError] = React.useState<null | Error>(null);
