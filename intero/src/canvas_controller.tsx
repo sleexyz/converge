@@ -10,7 +10,7 @@ import * as dagre from "@dagrejs/dagre";
 import * as React from "react";
 import { Id, TNodeRow, useToposorterState } from "./ToposorterState";
 import { SelectedNodeRefContext } from "./Selection";
-import { useMakeStateAsync, useRefState } from "./state";
+import { useMakeStateAsync } from "./state";
 
 export const NodesContext = React.createContext<Node[]>([]);
 export const EdgesContext = React.createContext<Edge[]>([]);
