@@ -5,7 +5,6 @@ import { format } from "date-fns";
 import { CommandLine } from "./CommandLine";
 import { useSelectedNode } from "./Selection";
 import { UIStateContext } from "./ui_state";
-import { useRefState } from "./state";
 
 export function SelectionPane() {
   const [selectedNode] = useSelectedNode();
@@ -25,8 +24,8 @@ export function SelectionPane() {
 
 function SelectionEditor({ tnode, id }: { tnode: TNode; id: Id }) {
   const stateManager = useContext(ToposorterStateManagerContext)!;
-  const [value, setValue, valueRef] = useRefState<string | null>(() => null);
-  const [notes, setNotes, notesRef] = useRefState<string | null>(() => null);
+  const [value, setValue] = useState<string | null>(() => null);
+  const [notes, setNotes] = useState<string | null>(() => null);
 
   // Update nodeValue when selectedNode changes
   useEffect(() => {

@@ -55,7 +55,6 @@ export function withNormalization(
           draft.nodes[id].createdAt = new Date();
         }
       }
-      window.nodes = draft.nodes;
     })(fn(state));
 
     // sort edges based on node order
@@ -195,31 +194,16 @@ export class ToposorterStateManager {
     };
   }
 
-  async addNode(value?: string) {
+  async add(from?: Id, connectionType?: "parent" | "child") {
     const id = uuidv4();
-    await this.bindAction((value?: string) => {
-      return produce((draft: ToposorterStateData) => {
-        draft.nodes[id] = {
-          value: value ?? "",
-          createdAt: new Date(),
-          children: [],
-        };
-      });
-    })(value);
-    return id;
-  }
-
-  // TODO: consolidate with addNode
-  async add(from: Id, connectionType: "parent" | "child") {
-    const id = uuidv4();
-    await this.bindAction((from: Id, connectionType: "parent" | "child") => {
+    await this.bindAction((from?: Id, connectionType?: "parent" | "child") => {
       return produce((draft: ToposorterStateData) => {
         draft.nodes[id] = {
           value: "",
           createdAt: new Date(),
           children: [],
         };
-        if (!connectionType) {
+        if (!connectionType || !from) {
           return;
         }
         if (connectionType === "child") {

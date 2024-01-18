@@ -57,7 +57,7 @@ const commands = Object.fromEntries(
       argsShape: {
       },
       runCommand(_args, {canvasManager}) {
-        canvasManager.layoutNodes();
+        canvasManager.layoutNodesAndCenterSelected();
       },
     }),
     new Command({

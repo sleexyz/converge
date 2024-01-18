@@ -10,7 +10,7 @@ import * as dagre from "@dagrejs/dagre";
 import * as React from "react";
 import { Id, TNodeRow, useToposorterState } from "./ToposorterState";
 import { SelectedNodeRefContext } from "./Selection";
-import { useMakeStateAsync } from "./state";
+import { useMakeStateAsync, useRefState } from "./state";
 
 export const NodesContext = React.createContext<Node[]>([]);
 export const EdgesContext = React.createContext<Edge[]>([]);
@@ -22,6 +22,7 @@ export const CanvasManagerContext = React.createContext<CanvasManager | null>(
 export class CanvasManager {
   setNodes: (action: React.SetStateAction<Node[]>) => Promise<void>;
   setEdges: (action: React.SetStateAction<Edge[]>) => Promise<void>;
+  waitForPropagation: () => Promise<void>;
 
   constructor(
     private readonly data: {
@@ -31,11 +32,14 @@ export class CanvasManager {
       g: dagre.graphlib.Graph;
       reactFlow: ReactFlowInstance;
       selectedNodeRef: React.RefObject<TNodeRow | null>;
+      waitForPropagation: () => Promise<void>;
     }
   ) {
     this.setNodes = data.setNodes;
     this.setEdges = data.setEdges;
+    this.waitForPropagation = data.waitForPropagation;
   }
+
 
   async layoutNodes() {
     const { setNodes, g, initialEdgesRef } = this.data;
@@ -44,14 +48,22 @@ export class CanvasManager {
     });
   }
 
+  async layoutNodesAndCenterSelected() {
+    await this.layoutNodes();
+    const selected = this.data.selectedNodeRef.current;
+    if (!selected) {
+      return
+    }
+    this.center(selected.id);
+  }
+
   center(id: Id) {
-    const { reactFlow } = this.data;
-    console.log(reactFlow.fitView({
+    this.data.reactFlow.fitView({
       nodes: [{ id: id }],
       minZoom: 1,
       maxZoom: 1,
       duration: 800,
-    }));
+    });
   }
 }
 
@@ -98,7 +110,12 @@ export function CanvasController(props: { children: React.ReactNode }) {
 
   const selectedNodeRef = React.useContext(SelectedNodeRefContext)!;
 
-  // const [shouldRelayout, setShouldRelayout, shouldRelayoutRef] = useRefState(() => true);
+  const onSyncListeners = React.useRef<(() => void)[]>([]);
+  const waitForPropagation = React.useCallback(() => {
+    return new Promise<void>((resolve) => {
+      onSyncListeners.current.push(resolve);
+    });
+  }, []);
 
   const canvasManager = useMemo(
     () => {
@@ -109,15 +126,14 @@ export function CanvasController(props: { children: React.ReactNode }) {
         reactFlow,
         initialEdgesRef,
         selectedNodeRef,
-        // shouldRelayoutRef,
-        // setShouldRelayout,
+        waitForPropagation
       });
     },
     [g, setNodes, setEdges, reactFlow, initialEdgesRef, selectedNodeRef]
   );
 
 
-  // Canvas gets synced to upstream state:
+  // Sync effect:
   // - Loads initial nodes from upstream state.
   // - Updates canvas nodes from upstream changes.
   React.useEffect(() => {
@@ -142,7 +158,21 @@ export function CanvasController(props: { children: React.ReactNode }) {
       return Object.values({ ...obj, ...overwrite });
     });
     setEdges(initialEdges);
+
+    // signal upstream sync complete
+    for (const listener of onSyncListeners.current) {
+      listener();
+    }
+    onSyncListeners.current = [];
+
   }, [initialNodes, initialEdges, nodesInitialized]);
+
+  React.useEffect(() => {
+    if (!nodesInitialized) {
+      return;
+    }
+    canvasManager.layoutNodes();
+  }, [nodesInitialized]);
 
   return (
     <CanvasManagerContext.Provider value={canvasManager}>
@@ -153,22 +183,6 @@ export function CanvasController(props: { children: React.ReactNode }) {
       </NodesContext.Provider>
     </CanvasManagerContext.Provider>
   );
-}
-
-function cache(fn: (...args: any[]) => any) {
-  let lastArgs: any[] = [];
-  let lastValue: any = undefined;
-  return (...args: any[]) => {
-    for (const [i, arg] of args.entries()) {
-      if (arg !== lastArgs[i]) {
-        lastArgs = [...args];
-        let out = fn(...args);
-        lastValue = out;
-        return out;
-      }
-    }
-    return lastValue;
-  };
 }
 
 const getLayoutedElements = (
