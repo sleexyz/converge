@@ -9,7 +9,7 @@ import {
 import * as dagre from "@dagrejs/dagre";
 import * as React from "react";
 import { Id, TNodeRow, useToposorterState } from "./ToposorterState";
-import { SelectedNodeRefContext } from "./Selection";
+import { SelectedNodeRefContext, useSelectedNode } from "./Selection";
 import { useMakeStateAsync } from "./state";
 
 export const NodesContext = React.createContext<Node[]>([]);
@@ -39,7 +39,6 @@ export class CanvasManager {
     this.setEdges = data.setEdges;
     this.waitForPropagation = data.waitForPropagation;
   }
-
 
   async layoutNodes() {
     const { setNodes, g, initialEdgesRef } = this.data;
@@ -132,7 +131,6 @@ export function CanvasController(props: { children: React.ReactNode }) {
     [g, setNodes, setEdges, reactFlow, initialEdgesRef, selectedNodeRef]
   );
 
-
   // Sync effect:
   // - Loads initial nodes from upstream state.
   // - Updates canvas nodes from upstream changes.
@@ -167,12 +165,7 @@ export function CanvasController(props: { children: React.ReactNode }) {
 
   }, [initialNodes, initialEdges, nodesInitialized]);
 
-  React.useEffect(() => {
-    if (!nodesInitialized) {
-      return;
-    }
-    canvasManager.layoutNodes();
-  }, [nodesInitialized]);
+  useSelectActiveOnMount(canvasManager);
 
   return (
     <CanvasManagerContext.Provider value={canvasManager}>
@@ -183,6 +176,29 @@ export function CanvasController(props: { children: React.ReactNode }) {
       </NodesContext.Provider>
     </CanvasManagerContext.Provider>
   );
+}
+
+function useSelectActiveOnMount(canvasManager: CanvasManager) {
+  const state = useToposorterState();
+  const activeNode = state.getActiveNode();
+  const [, setSelectedNode] = useSelectedNode();
+
+  const nodesInitialized = useNodesInitialized();
+
+  React.useEffect(() => {
+    if (!nodesInitialized) {
+      return;
+    }
+    const id = activeNode?.id;
+    if (!id) {
+      return;
+    }
+    (async () => {
+      await setSelectedNode(id);
+      await canvasManager.layoutNodes();
+      canvasManager.center(id);
+    })();
+  }, [nodesInitialized]);
 }
 
 const getLayoutedElements = (

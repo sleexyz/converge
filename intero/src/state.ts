@@ -56,34 +56,49 @@ function parseJSON<T>(json: string): T {
 }
 
 
-export function useMakeStateAsync<T>([state, _setState]: [T, React.Dispatch<React.SetStateAction<T>>]) {
-  const resolveQueueRef = React.useRef<(() => void)[]>([]);
-  function pushQueue(resolve: () => void) {
-    resolveQueueRef.current.push(resolve);
+/**
+ * Enables effect completion signaling for effectful functions.
+ */
+class ResolveQueue {
+  constructor(readonly resolveQueueRef: React.MutableRefObject<(() => void)[]>) {}
+
+  private push(resolve: () => void) {
+    this.resolveQueueRef.current.push(resolve);
   }
-  function resetQueue() {
-    resolveQueueRef.current = [];
-  }
-  function consumeQueue() {
-    const queue = resolveQueueRef.current;
-    resetQueue();
+
+  consume() {
+    const queue = this.resolveQueueRef.current;
+    this.resolveQueueRef.current = [];
     for (const resolve of queue) {
       resolve();
     }
   }
 
+  waitOnConsume() {
+    return new Promise<void>((resolve) => {
+      this.push(resolve);
+    });
+  }
+}
+export function useResolveQueue() {
+  const resolveQueueRef = React.useRef<(() => void)[]>([]);
+  return React.useMemo(() => new ResolveQueue(resolveQueueRef), []);
+}
+
+// TODO: deprecate in favor of useResolveQueue
+export function useMakeStateAsync<T>([state, _setState]: [T, React.Dispatch<React.SetStateAction<T>>]) {
+  const queue = useResolveQueue();
+
   React.useEffect(() => {
-    consumeQueue();
+    queue.consume();
   }, [state]);
 
   const setState = React.useCallback(
     (newState: React.SetStateAction<T>) => {
       _setState(newState);
-      return new Promise<void>((resolve) => {
-        pushQueue(resolve);
-      });
+      return queue.waitOnConsume();
     },
-    [_setState, resolveQueueRef]
+    [_setState, queue]
   );
   return [state, setState] as const;
 }

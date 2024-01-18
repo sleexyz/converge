@@ -13,7 +13,7 @@ export class ActionManager {
   constructor(
     readonly stateManager: ToposorterStateManager,
     readonly canvasManager: CanvasManager,
-    readonly setSelectedNode: React.Dispatch<SetStateAction<Id | null>>,
+    readonly setSelectedNode: (id: Id | null) => Promise<void>,
     readonly uiState: UIState
   ) {}
 
@@ -21,7 +21,7 @@ export class ActionManager {
     const id = await this.stateManager.add(from, connectionType);
     await this.canvasManager.waitForPropagation();
 
-    this.setSelectedNode(id);
+    await this.setSelectedNode(id);
     this.uiState.focusTitle();
 
     await this.canvasManager.layoutNodesAndCenterSelected();
