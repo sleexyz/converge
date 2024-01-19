@@ -12,6 +12,9 @@ import { useSelectedNode } from "./Selection";
 import { UIStateContext } from "./ui_state";
 import { CanvasManager, CanvasManagerContext } from "./canvas_controller";
 import { ActionManager, ActionManagerContext } from "./action_manager";
+import { BaseDirectory, createDir, writeBinaryFile } from '@tauri-apps/api/fs';
+import { appDataDir } from "@tauri-apps/api/path";
+
 
 class ArgType<_T> {
   static TNode = new ArgType<TNodeRow>();
@@ -116,6 +119,26 @@ const commands = Object.fromEntries(
       runCommand(args, {actionManager}) {
         actionManager.setStatus(args.subject, "active");
       },
+    }),
+    new Command({
+      command: "backup",
+      argsShape: {},
+      async runCommand(_args, _ctx) {
+        const data = window.localStorage.getItem("toposorter");
+        if (data) {
+          const blob = new Blob([data], { type: 'text/json' });
+          const fileName = `toposorter-backup-${new Date().toISOString()}.json`;
+          console.log(`Writing backup to ${fileName}`);
+          const appDataDirPath = await appDataDir();
+          await createDir(appDataDirPath, { recursive: true });
+          await writeBinaryFile(fileName, await blob.arrayBuffer(), {
+            dir: BaseDirectory.AppData,
+          });
+          alert("Backup written to " + appDataDirPath + fileName);
+        } else {
+          console.error("No data found in localStorage for 'toposorter'");
+        }
+      }
     }),
   ].map((command) => [command.data.command, command])
 );

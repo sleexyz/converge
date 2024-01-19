@@ -65,6 +65,7 @@ fn main() {
 
             Ok(())
         })
+        .plugin(tauri_plugin_persisted_scope::init())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -16,8 +16,20 @@
     "macOSPrivateApi": true,
     "allowlist": {
       "all": false,
+      "path": {
+        "all": true
+      },
       "dialog": {
         "all": true
+      },
+      "fs": {
+        "all": false,
+        "writeFile": true,
+        "createDir": true,
+        "scope": [
+          "$APPDATA/",
+          "$APPDATA/**"
+        ]
       },
       "globalShortcut": {
         "all": true
