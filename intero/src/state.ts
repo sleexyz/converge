@@ -74,7 +74,7 @@ class ResolveQueue {
     }
   }
 
-  waitOnConsume() {
+  waitOnConsume = () => {
     return new Promise<void>((resolve) => {
       this.push(resolve);
     });

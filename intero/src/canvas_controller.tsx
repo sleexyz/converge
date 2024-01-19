@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   Edge,
   Node,
@@ -8,9 +8,15 @@ import {
 } from "reactflow";
 import * as dagre from "@dagrejs/dagre";
 import * as React from "react";
-import { Id, TNodeRow, useToposorterState } from "./ToposorterState";
+import {
+  Id,
+  TNode,
+  TNodeRow,
+  Toposort,
+  useToposorterState,
+} from "./ToposorterState";
 import { SelectedNodeRefContext, useSelectedNode } from "./Selection";
-import { useMakeStateAsync } from "./state";
+import { useMakeStateAsync, useRefState, useResolveQueue } from "./state";
 
 export const NodesContext = React.createContext<Node[]>([]);
 export const EdgesContext = React.createContext<Edge[]>([]);
@@ -19,6 +25,11 @@ export const CanvasManagerContext = React.createContext<CanvasManager | null>(
   null
 );
 
+interface CanvasState {
+  nodes: Node[];
+  edges: Edge[];
+}
+
 export class CanvasManager {
   setNodes: (action: React.SetStateAction<Node[]>) => Promise<void>;
   setEdges: (action: React.SetStateAction<Edge[]>) => Promise<void>;
@@ -26,9 +37,9 @@ export class CanvasManager {
 
   constructor(
     private readonly data: {
+      canvasStateRef?: React.RefObject<CanvasState>;
       setNodes: (action: React.SetStateAction<Node[]>) => Promise<void>;
       setEdges: (action: React.SetStateAction<Edge[]>) => Promise<void>;
-      initialEdgesRef: React.RefObject<Edge[]>;
       g: dagre.graphlib.Graph;
       reactFlow: ReactFlowInstance;
       selectedNodeRef: React.RefObject<TNodeRow | null>;
@@ -41,9 +52,10 @@ export class CanvasManager {
   }
 
   async layoutNodes() {
-    const { setNodes, g, initialEdgesRef } = this.data;
+    const { setNodes, g, canvasStateRef } = this.data;
     await setNodes((nodes) => {
-      return getLayoutedElements(g, nodes, initialEdgesRef.current!).nodes;
+      return getLayoutedElements(g, nodes, canvasStateRef!.current!.edges)
+        .nodes;
     });
   }
 
@@ -51,7 +63,7 @@ export class CanvasManager {
     await this.layoutNodes();
     const selected = this.data.selectedNodeRef.current;
     if (!selected) {
-      return
+      return;
     }
     this.center(selected.id);
   }
@@ -79,7 +91,11 @@ export function CanvasController(props: { children: React.ReactNode }) {
   const [initialNodes, initialEdges] = useMemo(() => {
     const initialNodes = [];
     const initialEdges = [];
-    for (const [id, node] of Object.entries(tNodes)) {
+    let entries = Object.entries(tNodes);
+    entries = orderNodes(entries);
+    console.log("ordered nodes");
+
+    for (const [id, node] of entries) {
       initialNodes.push({
         id,
         type: "custom",
@@ -96,40 +112,70 @@ export function CanvasController(props: { children: React.ReactNode }) {
     }
     return [initialNodes, initialEdges];
   }, [tNodes]);
-  const initialEdgesRef = React.useRef(initialEdges);
-  const initialNodesRef = React.useRef(initialNodes);
-  React.useEffect(() => {
-    initialEdgesRef.current = initialEdges;
-    initialNodesRef.current = initialNodes;
-  }, [initialEdges, initialNodes]);
 
-  const [nodes, setNodes] = useMakeStateAsync(useState<Node[]>(initialNodes));
-  const [edges, setEdges] = useMakeStateAsync(useState<Edge[]>(initialEdges));
+  const [_canvasState, _setCanvasState, canvasStateRef] = useRefState<{
+    nodes: Node[];
+    edges: Edge[];
+  }>(() => ({
+    nodes: initialNodes,
+    edges: initialEdges,
+  }));
+
+  const [canvasState, setCanvasState] = useMakeStateAsync([
+    _canvasState,
+    _setCanvasState,
+  ]);
+  const { nodes, edges } = canvasState;
+
+  const setNodes = React.useCallback(
+    (action: React.SetStateAction<Node[]>) => {
+      return setCanvasState((state) => {
+        return {
+          ...state,
+          nodes: typeof action === "function" ? action(state.nodes) : action,
+        };
+      });
+    },
+    [setCanvasState]
+  );
+
+  const setEdges = React.useCallback(
+    (action: React.SetStateAction<Edge[]>) => {
+      return setCanvasState((state) => {
+        return {
+          ...state,
+          edges: typeof action === "function" ? action(state.edges) : action,
+        };
+      });
+    },
+    [setCanvasState]
+  );
+
   const reactFlow = useReactFlow();
 
   const selectedNodeRef = React.useContext(SelectedNodeRefContext)!;
 
-  const onSyncListeners = React.useRef<(() => void)[]>([]);
-  const waitForPropagation = React.useCallback(() => {
-    return new Promise<void>((resolve) => {
-      onSyncListeners.current.push(resolve);
-    });
-  }, []);
+  const resolveQueue = useResolveQueue();
 
-  const canvasManager = useMemo(
-    () => {
-      return new CanvasManager({
-        g,
-        setNodes,
-        setEdges,
-        reactFlow,
-        initialEdgesRef,
-        selectedNodeRef,
-        waitForPropagation
-      });
-    },
-    [g, setNodes, setEdges, reactFlow, initialEdgesRef, selectedNodeRef]
-  );
+  const canvasManager = useMemo(() => {
+    return new CanvasManager({
+      g,
+      setNodes,
+      setEdges,
+      reactFlow,
+      selectedNodeRef,
+      waitForPropagation: resolveQueue.waitOnConsume,
+      canvasStateRef,
+    });
+  }, [
+    g,
+    setNodes,
+    setEdges,
+    reactFlow,
+    selectedNodeRef,
+    resolveQueue,
+    canvasStateRef,
+  ]);
 
   // Sync effect:
   // - Loads initial nodes from upstream state.
@@ -138,31 +184,30 @@ export function CanvasController(props: { children: React.ReactNode }) {
     if (!nodesInitialized) {
       return;
     }
-    setNodes((nodes) => {
-      let obj = Object.fromEntries(initialNodes.map((node) => [node.id, node]));
-      let overwrite = Object.fromEntries(
-        nodes
-          .filter((node) => node.id in obj)
-          .map((node) => [
-            node.id,
-            {
-              // Keep position and other data.
-              ...node,
-              // Carry updated data over.
-              ...{ data: obj[node.id].data },
-            },
-          ])
-      );
-      return Object.values({ ...obj, ...overwrite });
-    });
-    setEdges(initialEdges);
+    (async () => {
+      await setCanvasState(({ nodes }) => {
+        const newNodes: Node[] = [];
+        const oldNodes = Object.fromEntries(nodes.map((node) => [node.id, node]));
 
-    // signal upstream sync complete
-    for (const listener of onSyncListeners.current) {
-      listener();
-    }
-    onSyncListeners.current = [];
+        // iterate with the new ordering
+        for (const node of initialNodes) {
+          newNodes.push({
+            ...node,
+            // Overwrite position and other data.
+            ...(oldNodes[node.id] || {}),
+            // Carry updated data over.
+            ...{ data: node.data },
+          });
+        }
+        return {
+          nodes: newNodes,
+          edges: initialEdges,
+        };
+      });
 
+      // signal upstream sync complete
+      resolveQueue.consume();
+    })();
   }, [initialNodes, initialEdges, nodesInitialized]);
 
   useSelectActiveOnMount(canvasManager);
@@ -201,23 +246,75 @@ function useSelectActiveOnMount(canvasManager: CanvasManager) {
   }, [nodesInitialized]);
 }
 
+// Ranks nodes and rearranges children ordering
+function orderNodes(entries: [string, TNode][]): [string, TNode][] {
+  // rank nodes
+  let out = Toposort.sort(entries);
+  out = out.sort(([_keyA, a], [_keyB, b]) => {
+    const statusDiff = statusToPoints(b.status) - statusToPoints(a.status);
+    if (statusDiff !== 0) {
+      return statusDiff;
+    }
+    // prefer later createdAt
+    const timeDiff = b.createdAt.getTime() - a.createdAt.getTime();
+    if (timeDiff !== 0) {
+      return timeDiff;
+    }
+    return 0;
+  });
+
+  // Re-order edges in place
+  const nodeIndicies = new Map<string, number>();
+  for (let [i, [id]] of out.entries()) {
+    nodeIndicies.set(id, i);
+  }
+
+  const newOut: [string, TNode][] = [];
+
+  for (let [i, node] of out) {
+    const newNode = { ...node };
+    newNode.children = [...node.children].sort((a, b) => {
+      const aIndex = nodeIndicies.get(a);
+      const bIndex = nodeIndicies.get(b);
+      if (aIndex === undefined || bIndex === undefined) {
+        throw new Error(`Could not find index for ${a} or ${b}`);
+      }
+      return aIndex - bIndex;
+    });
+    newOut.push([i, newNode]);
+  }
+
+  return newOut;
+}
+
 const getLayoutedElements = (
-  g: dagre.graphlib.Graph,
-  nodes: Node[],
+  _g: dagre.graphlib.Graph,
+  nodes: Node<TNode>[],
   edges: Edge[]
 ) => {
+  const g = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
+  // reset positions
+  for (const node of nodes) {
+    node.position = { x: 0, y: 0 };
+  }
+
+  // apply layout
   g.setGraph({
     rankdir: "RL",
     align: "UL",
     ranker: "tight-tree",
     // ranker: 'longest-path',
     esep: 10,
+  });
+  for (const edge of edges) {
+    g.setEdge(edge.source, edge.target);
+  }
+  for (const node of nodes) {
+    g.setNode(node.id, node as any);
+  }
+  dagre.layout(g, {
     disableOptimalOrderHeuristic: true,
   });
-
-  edges.forEach((edge) => g.setEdge(edge.source, edge.target));
-  nodes.forEach((node) => g.setNode(node.id, node as any));
-  dagre.layout(g);
   return {
     nodes: nodes.map((node) => {
       const dagreNode = g.node(node.id);
@@ -232,3 +329,14 @@ const getLayoutedElements = (
     edges,
   };
 };
+
+function statusToPoints(status: "active" | "done" | undefined): number {
+  switch (status) {
+    case "done":
+      return -1;
+    case "active":
+      return 1;
+    default:
+      return 0;
+  }
+}

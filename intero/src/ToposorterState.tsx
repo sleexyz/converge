@@ -13,73 +13,6 @@ export interface TNode {
   children: Id[];
 }
 
-function statusToPoints(status: "active" | "done" | undefined): number {
-  switch (status) {
-    case "done":
-      return -1;
-    case "active":
-      return 1;
-    default:
-      return 0;
-  }
-}
-
-export function withNormalization(
-  fn: (state: ToposorterStateData) => ToposorterStateData = (state) => state
-) {
-  return (state: ToposorterStateData) => {
-    // sort nodes
-    let out = produce((draft: Draft<ToposorterStateData>) => {
-      const state = original(draft)!;
-      draft.nodes = {};
-      const entries = Object.entries(state.nodes).sort(
-        ([_keyA, a], [_keyB, b]) => {
-          const statusDiff =
-            statusToPoints(b.status) - statusToPoints(a.status);
-          if (statusDiff !== 0) {
-            return statusDiff;
-          }
-          // prefer later createdAt
-          const timeDiff = b.createdAt.getTime() - a.createdAt.getTime();
-          if (timeDiff !== 0) {
-            return timeDiff;
-          }
-          return 0;
-        }
-      );
-      for (let id of Toposort.sort(entries)) {
-        // for (let id of entries.map(([id, _node]) => id)) {
-        (draft.nodes[id] as any) = {};
-        Object.assign(draft.nodes[id], state.nodes[id]);
-        if (state.nodes[id].createdAt == undefined) {
-          draft.nodes[id].createdAt = new Date();
-        }
-      }
-    })(fn(state));
-
-    // sort edges based on node order
-    return produce((draft: Draft<ToposorterStateData>) => {
-      const state = original(draft)!;
-      const nodeIndicies = new Map<string, number>();
-      for (let [i, id] of Object.keys(state.nodes).entries()) {
-        nodeIndicies.set(id, i);
-      }
-      for (let id of Object.keys(state.nodes)) {
-        draft.nodes[id].children = [...state.nodes[id].children].sort(
-          (a, b) => {
-            const aIndex = nodeIndicies.get(a);
-            const bIndex = nodeIndicies.get(b);
-            if (aIndex === undefined || bIndex === undefined) {
-              throw new Error(`Could not find index for ${a} or ${b}`);
-            }
-            return aIndex - bIndex;
-          }
-        );
-      }
-    })(out);
-  };
-}
-
 export class Toposort {
   visited = new Set<Id>();
   nodes: Record<Id, TNode> = {};
@@ -89,18 +22,18 @@ export class Toposort {
   }
 
   // Returns topologically sorted nodes.
-  static sort(entries: [key: Id, value: TNode][]): Id[] {
+  static sort(entries: [key: Id, value: TNode][]): [key: Id, value: TNode][] {
     return new Toposort(entries).sort();
   }
 
   // Visit all nodes.
   // Visit all of a node's children recursively before visiting a node.
   // Then insertion order should be topologically sorted.
-  sort(): Id[] {
+  sort(): [key: Id, value: TNode][] {
     for (let key of Object.keys(this.nodes)) {
       this.visitChildren(key);
     }
-    return [...this.visited];
+    return [...this.visited].map((x) => [x, this.nodes[x]]);
   }
 
   // DFS
@@ -190,7 +123,7 @@ export class ToposorterStateManager {
     ) => (state: ToposorterStateData) => ToposorterStateData
   ): (...args: Args) => Promise<void> {
     return async (...args: Args) => {
-      await this.trySetState(withNormalization(action(...args)));
+      await this.trySetState(action(...args));
     };
   }
 
@@ -311,7 +244,7 @@ export function ToposorterStateProvider({
       {
         nodes: {},
       },
-      withNormalization((x) => x)
+      x => x,
     );
   const [state, setState] = useMakeStateAsync([_state, _setState]);
 

@@ -95,8 +95,8 @@ const commands = Object.fromEntries(
         subject: ArgType.Id,
         object: ArgType.string,
       },
-      runCommand(args, {stateManager}) {
-        stateManager.setStatus(args.subject, args.object);
+      runCommand(args, {actionManager}) {
+        actionManager.setStatus(args.subject, args.object);
       },
     }),
     new Command({
@@ -104,8 +104,8 @@ const commands = Object.fromEntries(
       argsShape: {
         subject: ArgType.Id,
       },
-      runCommand(args, {stateManager}) {
-        stateManager.setStatus(args.subject, "done");
+      runCommand(args, {actionManager}) {
+        actionManager.setStatus(args.subject, "done");
       },
     }),
     new Command({
@@ -113,8 +113,8 @@ const commands = Object.fromEntries(
       argsShape: {
         subject: ArgType.Id,
       },
-      runCommand(args, {stateManager}) {
-        stateManager.setStatus(args.subject, "active");
+      runCommand(args, {actionManager}) {
+        actionManager.setStatus(args.subject, "active");
       },
     }),
   ].map((command) => [command.data.command, command])

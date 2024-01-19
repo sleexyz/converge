@@ -38,7 +38,7 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
         id,
       };
       _setSelectedNode(row);
-      console.log("selected node", row);
+      // console.log("selected node", row);
       const { addSelectedNodes } = store.getState();
       addSelectedNodes([id]);
       return queue.waitOnConsume();

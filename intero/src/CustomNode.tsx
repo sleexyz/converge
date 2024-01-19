@@ -1,9 +1,9 @@
 import { useContext } from "react";
 import { UIStateContext } from "./ui_state";
 import { Handle, Position } from "reactflow";
-import { TNode } from "./ToposorterState";
+import { Node } from "./ToposorterState";
 
-export function CustomNode(props: { data: TNode; id: string; selected: boolean }) {
+export function CustomNode(props: { data: Node; id: string; selected: boolean }) {
     let classes = "";
   
     if (props.data.status === "done") {

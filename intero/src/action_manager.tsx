@@ -1,4 +1,4 @@
-import { SetStateAction, useContext } from "react";
+import { useContext } from "react";
 import * as React from "react";
 import {
   Id,
@@ -24,6 +24,14 @@ export class ActionManager {
     await this.setSelectedNode(id);
     this.uiState.focusTitle();
 
+    await this.canvasManager.layoutNodesAndCenterSelected();
+  }
+
+  async setStatus(id: Id, status: string) {
+    await this.stateManager.setStatus(id, status);
+    await this.canvasManager.waitForPropagation();
+
+    await this.setSelectedNode(id);
     await this.canvasManager.layoutNodesAndCenterSelected();
   }
 }
