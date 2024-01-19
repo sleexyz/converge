@@ -76,6 +76,15 @@ export class CanvasManager {
       duration: 800,
     });
   }
+
+  findNodes(query: string): Node[] {
+    const lowerCaseQuery = query.toLowerCase();
+    return (
+      this.data.canvasStateRef?.current?.nodes.filter((node) =>
+        node.data.value.toLowerCase().includes(lowerCaseQuery)
+      ) || []
+    );
+  }
 }
 
 export function CanvasController(props: { children: React.ReactNode }) {
@@ -187,7 +196,9 @@ export function CanvasController(props: { children: React.ReactNode }) {
     (async () => {
       await setCanvasState(({ nodes }) => {
         const newNodes: Node[] = [];
-        const oldNodes = Object.fromEntries(nodes.map((node) => [node.id, node]));
+        const oldNodes = Object.fromEntries(
+          nodes.map((node) => [node.id, node])
+        );
 
         // iterate with the new ordering
         for (const node of initialNodes) {

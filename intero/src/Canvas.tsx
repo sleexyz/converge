@@ -8,6 +8,7 @@ import ReactFlow, {
   OnEdgesChange,
   BackgroundVariant,
   useNodesInitialized,
+  Panel,
 } from "reactflow";
 import { useCallback, useContext } from "react";
 import "reactflow/dist/style.css";
@@ -19,6 +20,7 @@ import {
 } from "./canvas_controller";
 import { useSelectedNode } from "./Selection";
 import { UIStateContext } from "./ui_state";
+import { SearchBox } from "./SearchBox";
 
 const nodeTypes = {
   custom: CustomNode,
@@ -86,7 +88,10 @@ export function Canvas() {
       onEdgesChange={onEdgesChange}
       onConnect={onConnect}
       nodesDraggable
-    >
+    >      
+      <Panel position="top-right">
+        <SearchBox />
+      </Panel>
       <Background
         color="white"
         style={{ opacity: "0.15" }}

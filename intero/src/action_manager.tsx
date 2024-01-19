@@ -15,7 +15,13 @@ export class ActionManager {
     readonly canvasManager: CanvasManager,
     readonly setSelectedNode: (id: Id | null) => Promise<void>,
     readonly uiState: UIState
-  ) {}
+  ) {
+  }
+
+  async selectNode(id: Id) {
+    await this.setSelectedNode(id);
+    await this.canvasManager.layoutNodesAndCenterSelected();
+  }
 
   async add(from?: Id, connectionType?: "parent" | "child") {
     const id = await this.stateManager.add(from, connectionType);
@@ -44,6 +50,8 @@ export function ActionManagerProvider(props: { children: React.ReactNode }) {
   const stateManager = useContext(ToposorterStateManagerContext)!;
   const [, setSelectedNode] = useSelectedNode();
   const uiState = useContext(UIStateContext)!;
+
+  // TODO: see why this is created twice.
   const canvasManager = useContext(CanvasManagerContext)!;
 
   const actionManager = React.useMemo(() => {
@@ -53,7 +61,7 @@ export function ActionManagerProvider(props: { children: React.ReactNode }) {
       setSelectedNode,
       uiState
     );
-  }, [stateManager, setSelectedNode, uiState]);
+  }, [stateManager, canvasManager, setSelectedNode, uiState]);
 
   return (
     <ActionManagerContext.Provider value={actionManager}>
