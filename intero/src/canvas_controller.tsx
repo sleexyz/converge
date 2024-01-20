@@ -10,6 +10,7 @@ import * as dagre from "@dagrejs/dagre";
 import * as React from "react";
 import {
   Id,
+  Status,
   TNode,
   TNodeRow,
   Toposort,
@@ -119,7 +120,6 @@ export function CanvasController(props: { children: React.ReactNode }) {
         }))
       );
     }
-    console.log("update initialNodes/Edges");
     return [initialNodes, initialEdges];
   }, [tNodes]);
 
@@ -195,7 +195,6 @@ export function CanvasController(props: { children: React.ReactNode }) {
   const syncStartRunIdRef = React.useRef<string|null>(null);
   React.useEffect(() => {
     setSynced(false);
-    console.log(initialNodes, initialEdges, nodesInitialized);
     const syncStartRunId = uuidv4()
     syncStartRunIdRef.current = syncStartRunId;
     if (!nodesInitialized) {
@@ -226,11 +225,9 @@ export function CanvasController(props: { children: React.ReactNode }) {
       });
       // signal upstream sync complete only if this is the latest update
       if (syncStartRunId !== syncStartRunIdRef.current ) {
-        console.log("skipping resolveQueue.consume()");
         return;
       }
       resolveQueue.consume();
-      console.log("sync complete");
       setSynced(true);
     })();
   }, [initialNodes, initialEdges, nodesInitialized]);
@@ -253,8 +250,13 @@ function useSelectActiveOnMount(canvasManager: CanvasManager, synced: boolean) {
   const activeNode = state.getActiveNode();
   const [, setSelectedNode] = useSelectedNode();
 
+  const hasRunRef = React.useRef(false);
+
   React.useEffect(() => {
     if (!synced) {
+      return;
+    }
+    if (hasRunRef.current) {
       return;
     }
     const id = activeNode?.id;
@@ -266,6 +268,7 @@ function useSelectActiveOnMount(canvasManager: CanvasManager, synced: boolean) {
       await setSelectedNode(id);
       await canvasManager.layoutNodes();
       canvasManager.center(id);
+      hasRunRef.current = true;
     })();
   }, [synced]);
 }
@@ -354,8 +357,7 @@ const getLayoutedElements = (
   };
 };
 
-export type Status = "active" | "done" | undefined;
-export function statusToPoints(status: "active" | "done" | undefined): number {
+export function statusToPoints(status: Status): number {
   switch (status) {
     case "done":
       return -1;

@@ -5,10 +5,15 @@ import { useLocalStorageState, useMakeStateAsync } from "./state";
 
 export type Id = string;
 
+export type TNodeType = "task" | "goal" | "project";
+
+export type Status = "active" | "done" | undefined;
+
 export interface TNode {
   value: string;
   createdAt: Date;
-  status?: "active" | "done";
+  status?: Status;
+  type?: TNodeType;
   notes?: string;
   children: Id[];
 }
@@ -199,6 +204,17 @@ export class ToposorterStateManager {
         );
       }
       draft.nodes[id].status = status as "active" | "done";
+    });
+  });
+
+  setType = this.bindAction((id: Id, type: string) => {
+    return produce((draft: Draft<ToposorterStateData>) => {
+      if (type !== "task" && type !== "goal" && type !== "project") {
+        throw new Error(
+          `Invalid type ${type}.`
+        );
+      }
+      draft.nodes[id].type = type;
     });
   });
 

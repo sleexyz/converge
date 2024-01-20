@@ -103,21 +103,13 @@ const commands = Object.fromEntries(
       },
     }),
     new Command({
-      command: "done",
+      command: "type",
       argsShape: {
         subject: ArgType.Id,
+        object: ArgType.string,
       },
       runCommand(args, {actionManager}) {
-        actionManager.setStatus(args.subject, "done");
-      },
-    }),
-    new Command({
-      command: "active",
-      argsShape: {
-        subject: ArgType.Id,
-      },
-      runCommand(args, {actionManager}) {
-        actionManager.setStatus(args.subject, "active");
+        actionManager.setType(args.subject, args.object);
       },
     }),
     new Command({

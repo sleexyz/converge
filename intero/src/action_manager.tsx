@@ -2,12 +2,13 @@ import { useContext } from "react";
 import * as React from "react";
 import {
   Id,
+  Status,
   ToposorterStateManager,
   ToposorterStateManagerContext,
 } from "./ToposorterState";
 import { UIState, UIStateContext } from "./ui_state";
 import { useSelectedNode } from "./Selection";
-import { CanvasManager, CanvasManagerContext, Status, statusToPoints } from "./canvas_controller";
+import { CanvasManager, CanvasManagerContext, statusToPoints } from "./canvas_controller";
 
 export class ActionManager {
   constructor(
@@ -32,6 +33,14 @@ export class ActionManager {
     await this.canvasManager.layoutNodesAndCenterSelected();
   }
 
+  async setType(id: Id, type: string) {
+    await this.stateManager.setType(id, type);
+    await this.canvasManager.waitForPropagation();
+
+    await this.setSelectedNode(id);
+    await this.canvasManager.layoutNodesAndCenterSelected();
+  }
+
   async setStatus(id: Id, status: string) {
     const oldStatus = this.stateManager.state().getNode(id).status;
     await this.stateManager.setStatus(id, status);
@@ -40,10 +49,13 @@ export class ActionManager {
     const oldStatusPoints = statusToPoints(oldStatus);
     const newStatusPoints = statusToPoints(status === "unset" ? undefined : status as Status);
     if (newStatusPoints < oldStatusPoints) {
+      await this.canvasManager.layoutNodes();
       return
     }
+
     await this.setSelectedNode(id);
-    await this.canvasManager.layoutNodesAndCenterSelected();
+    await this.canvasManager.layoutNodes();
+    this.canvasManager.center(id);
   }
 }
 

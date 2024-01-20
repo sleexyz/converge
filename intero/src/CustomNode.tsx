@@ -1,9 +1,9 @@
 import { useContext } from "react";
 import { UIStateContext } from "./ui_state";
 import { Handle, Position } from "reactflow";
-import { Node } from "./ToposorterState";
+import { TNode } from "./ToposorterState";
 
-export function CustomNode(props: { data: Node; id: string; selected: boolean }) {
+export function CustomNode(props: { data: TNode; id: string; selected: boolean }) {
     let classes = "";
   
     if (props.data.status === "done") {
@@ -35,6 +35,14 @@ export function CustomNode(props: { data: Node; id: string; selected: boolean })
     }
 
     const chipText = props.id.slice(0, 4);
+
+    if (props.data.type === "project") {
+      classes += " p-8";
+    }
+
+    if (props.data.type === "goal") {
+      classes += " p-4";
+    }
 
     return (
       <>
