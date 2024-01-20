@@ -7,7 +7,7 @@ import {
 } from "./ToposorterState";
 import { UIState, UIStateContext } from "./ui_state";
 import { useSelectedNode } from "./Selection";
-import { CanvasManager, CanvasManagerContext } from "./canvas_controller";
+import { CanvasManager, CanvasManagerContext, Status, statusToPoints } from "./canvas_controller";
 
 export class ActionManager {
   constructor(
@@ -33,9 +33,15 @@ export class ActionManager {
   }
 
   async setStatus(id: Id, status: string) {
+    const oldStatus = this.stateManager.state().getNode(id).status;
     await this.stateManager.setStatus(id, status);
     await this.canvasManager.waitForPropagation();
 
+    const oldStatusPoints = statusToPoints(oldStatus);
+    const newStatusPoints = statusToPoints(status === "unset" ? undefined : status as Status);
+    if (newStatusPoints < oldStatusPoints) {
+      return
+    }
     await this.setSelectedNode(id);
     await this.canvasManager.layoutNodesAndCenterSelected();
   }

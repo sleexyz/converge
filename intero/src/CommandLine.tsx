@@ -121,6 +121,13 @@ const commands = Object.fromEntries(
       },
     }),
     new Command({
+      command: "reload",
+      argsShape: {},
+      async runCommand(_args, _ctx) {
+        window.location.reload();
+      }
+    }),
+    new Command({
       command: "backup",
       argsShape: {},
       async runCommand(_args, _ctx) {

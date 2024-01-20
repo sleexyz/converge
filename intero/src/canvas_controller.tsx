@@ -354,7 +354,8 @@ const getLayoutedElements = (
   };
 };
 
-function statusToPoints(status: "active" | "done" | undefined): number {
+export type Status = "active" | "done" | undefined;
+export function statusToPoints(status: "active" | "done" | undefined): number {
   switch (status) {
     case "done":
       return -1;
