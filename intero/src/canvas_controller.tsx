@@ -17,6 +17,7 @@ import {
 } from "./ToposorterState";
 import { SelectedNodeRefContext, useSelectedNode } from "./Selection";
 import { useMakeStateAsync, useRefState, useResolveQueue } from "./state";
+import { v4 as uuidv4 } from "uuid";
 
 export const NodesContext = React.createContext<Node[]>([]);
 export const EdgesContext = React.createContext<Edge[]>([]);
@@ -102,7 +103,6 @@ export function CanvasController(props: { children: React.ReactNode }) {
     const initialEdges = [];
     let entries = Object.entries(tNodes);
     entries = orderNodes(entries);
-    console.log("ordered nodes");
 
     for (const [id, node] of entries) {
       initialNodes.push({
@@ -119,6 +119,7 @@ export function CanvasController(props: { children: React.ReactNode }) {
         }))
       );
     }
+    console.log("update initialNodes/Edges");
     return [initialNodes, initialEdges];
   }, [tNodes]);
 
@@ -189,7 +190,11 @@ export function CanvasController(props: { children: React.ReactNode }) {
   // Sync effect:
   // - Loads initial nodes from upstream state.
   // - Updates canvas nodes from upstream changes.
+  const syncStartRunIdRef = React.useRef<string|null>(null);
   React.useEffect(() => {
+    console.log(initialNodes, initialEdges, nodesInitialized);
+    const syncStartRunId = uuidv4()
+    syncStartRunIdRef.current = syncStartRunId;
     if (!nodesInitialized) {
       return;
     }
@@ -210,13 +215,16 @@ export function CanvasController(props: { children: React.ReactNode }) {
             ...{ data: node.data },
           });
         }
+
         return {
           nodes: newNodes,
           edges: initialEdges,
         };
       });
-
-      // signal upstream sync complete
+      // signal upstream sync complete only if this is the latest update
+      if (syncStartRunId !== syncStartRunIdRef.current ) {
+        return;
+      }
       resolveQueue.consume();
     })();
   }, [initialNodes, initialEdges, nodesInitialized]);

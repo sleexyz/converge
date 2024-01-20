@@ -26,7 +26,6 @@ export class ActionManager {
   async add(from?: Id, connectionType?: "parent" | "child") {
     const id = await this.stateManager.add(from, connectionType);
     await this.canvasManager.waitForPropagation();
-
     await this.setSelectedNode(id);
     this.uiState.focusTitle();
 
