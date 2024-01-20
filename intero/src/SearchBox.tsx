@@ -2,7 +2,7 @@ import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { CanvasManagerContext } from "./canvas_controller";
 import { Node } from "reactflow";
 import { ActionManagerContext } from "./action_manager";
-import { SelectedNodeRefContext, useSelectedNode } from "./Selection";
+import { useSelectedNode } from "./Selection";
 
 export function SearchBox() {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -94,7 +94,7 @@ function MatchResult(props: { node: Node }) {
   const [selectedNode] = useSelectedNode();
   let className =
     "p-2 select-none cursor-pointer text-sm text-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 hover:text-gray-500 white-space-nowrap overflow-ellipsis min-w-0 w-full basis-full rounded-xl";
-  if (props.node.id === selectedNode.id) {
+  if (props.node.id === selectedNode?.id) {
     className += " text-pink-500 hover:text-pink-600";
   }
   return (

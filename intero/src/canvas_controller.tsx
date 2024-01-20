@@ -187,11 +187,14 @@ export function CanvasController(props: { children: React.ReactNode }) {
     canvasStateRef,
   ]);
 
+
   // Sync effect:
   // - Loads initial nodes from upstream state.
   // - Updates canvas nodes from upstream changes.
+  const [synced, setSynced] = React.useState(false);
   const syncStartRunIdRef = React.useRef<string|null>(null);
   React.useEffect(() => {
+    setSynced(false);
     console.log(initialNodes, initialEdges, nodesInitialized);
     const syncStartRunId = uuidv4()
     syncStartRunIdRef.current = syncStartRunId;
@@ -223,13 +226,16 @@ export function CanvasController(props: { children: React.ReactNode }) {
       });
       // signal upstream sync complete only if this is the latest update
       if (syncStartRunId !== syncStartRunIdRef.current ) {
+        console.log("skipping resolveQueue.consume()");
         return;
       }
       resolveQueue.consume();
+      console.log("sync complete");
+      setSynced(true);
     })();
   }, [initialNodes, initialEdges, nodesInitialized]);
 
-  useSelectActiveOnMount(canvasManager);
+  useSelectActiveOnMount(canvasManager, synced);
 
   return (
     <CanvasManagerContext.Provider value={canvasManager}>
@@ -242,19 +248,18 @@ export function CanvasController(props: { children: React.ReactNode }) {
   );
 }
 
-function useSelectActiveOnMount(canvasManager: CanvasManager) {
+function useSelectActiveOnMount(canvasManager: CanvasManager, synced: boolean) {
   const state = useToposorterState();
   const activeNode = state.getActiveNode();
   const [, setSelectedNode] = useSelectedNode();
 
-  const nodesInitialized = useNodesInitialized();
-
   React.useEffect(() => {
-    if (!nodesInitialized) {
+    if (!synced) {
       return;
     }
     const id = activeNode?.id;
     if (!id) {
+      canvasManager.layoutNodes();
       return;
     }
     (async () => {
@@ -262,7 +267,7 @@ function useSelectActiveOnMount(canvasManager: CanvasManager) {
       await canvasManager.layoutNodes();
       canvasManager.center(id);
     })();
-  }, [nodesInitialized]);
+  }, [synced]);
 }
 
 // Ranks nodes and rearranges children ordering

@@ -10,7 +10,7 @@ import { Id, TNodeRow, ToposorterStateManagerContext } from "./ToposorterState";
 import { useRefState, useResolveQueue } from "./state";
 
 const SelectedNodeContext = createContext<
-  [TNodeRow, (id: Id | null) => Promise<void>] | null
+  [TNodeRow|null, (id: Id | null) => Promise<void>] | null
 >(null);
 
 export function SelectionProvider({ children }: { children: React.ReactNode }) {
@@ -57,7 +57,7 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
 
   const ret = useMemo(() => {
     return [selectedNode, setSelectedNode] as [
-      TNodeRow,
+      TNodeRow|null,
       (id: Id | null) => Promise<void>
     ];
   }, [selectedNode, setSelectedNode]);
