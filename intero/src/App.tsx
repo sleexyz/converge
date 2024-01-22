@@ -44,22 +44,14 @@ function ToposorterView() {
   
 
   return (
-    <div className="absolute bg-black bg-opacity-50 h-full w-full flex justify-start items-start">
-      <div className="flex-1 flex flex-col items-start m-[3%] space-y-8 p-8 w-[94%] rounded-xl h-[94%] bg-black">
+    <div className="absolute h-full w-full flex justify-start items-start">
+      <div className="w-full h-full flex flex-1">
         <Canvas />
-      </div>
-      <div className="flex-0 flex-grow-0 flex-shrink flex flex-col items-start m-[3%] w-[600px] space-y-8 rounded-xl h-[94%]">
         {error && (
-          <pre className="bg-red-100 text-red-500 m-8 p-8 rounded-xl text-bold fixed right-0 top-0">
+          <pre className="fixed top-0 right-0 bg-red-100 text-red-500 m-8 p-8 rounded-xl text-bold">
             Error: {error.message}
           </pre>
         )}
-        {/* <div className="flex-0 basis-[300px] flex flex-col-reverse w-full overscroll-none overflow-y-scroll bg-black rounded-xl">
-          <ErrorBoundary>
-            <ActivityPicker />
-          </ErrorBoundary>
-        </div> */}
-        <SelectionPane />
       </div>
     </div>
   );

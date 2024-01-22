@@ -1,0 +1,39 @@
+
+.node {
+    @apply text-gray-500 bg-white rounded-2xl p-4 box-border shadow-md;
+}
+
+.done {
+    @apply text-gray-500 bg-gray-200;
+}
+
+.active {
+}
+
+.node.selected {
+    @apply text-pink-500;
+}
+
+
+.project {
+    @apply p-8 text-3xl font-bold font-mono;
+}
+.goal {
+    @apply p-4 text-xl font-bold;
+}
+
+.edge path {
+    /* stroke: ; */
+    /* stroke-width: 1px; */
+}
+ 
+
+@media (prefers-color-scheme: dark) {
+    .edge path {
+        stroke: #fff;
+    }
+
+    .controls {
+        filter: invert();
+    }
+}

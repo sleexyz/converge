@@ -15,6 +15,7 @@ use cocoa::appkit::NSEventMask;
 use objc::{class, msg_send, sel, sel_impl};
 use cocoa::base::{id, nil};
 use cocoa::foundation::{NSPoint, NSRect};
+use window_vibrancy::NSVisualEffectMaterial;
 
 use std::process;
 
@@ -58,6 +59,9 @@ fn main() {
         .setup(move |app| {
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             let window = app.get_window("main").unwrap();
+            #[cfg(target_os = "macos")]
+            window_vibrancy::apply_vibrancy(&window, NSVisualEffectMaterial::Popover, None, None)
+                .expect("Unsupported platform! 'apply_vibrancy' is only supported on macOS");
             // window.set_transparent_titlebar(true, true);
             panel_ext::init_as_panel(window);
             widget::show_widget_window(app.app_handle());

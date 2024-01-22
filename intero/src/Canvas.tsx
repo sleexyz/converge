@@ -21,6 +21,8 @@ import {
 import { useSelectedNode } from "./Selection";
 import { UIStateContext } from "./ui_state";
 import { SearchBox } from "./SearchBox";
+import { SelectionPane } from "./SelectionPane";
+import { CommandLine } from "./CommandLine";
 
 const nodeTypes = {
   custom: CustomNode,
@@ -89,17 +91,18 @@ export function Canvas() {
       onConnect={onConnect}
       nodesDraggable
     >      
-      <Panel position="top-right">
+      <Panel position="top-center">
         <SearchBox />
       </Panel>
-      <Background
-        color="white"
-        style={{ opacity: "0.15" }}
-        variant={BackgroundVariant.Lines}
-        gap={60}
-        size={1}
-      />
-      <Controls className="invert" />
+      <Panel position="top-right" className="m-0 h-full">
+        <div className="flex items-center justify-center align-center h-full">
+            <SelectionPane />
+        </div>
+      </Panel>
+      <Panel position="bottom-right">
+        <CommandLine />
+      </Panel>
+      <Controls />
     </ReactFlow>
   );
 }

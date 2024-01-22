@@ -27,6 +27,12 @@ export function SearchBox() {
     };
   }, []);
 
+    useEffect(() => {
+        if (show) {
+            setInput("");
+        }
+    }, [show]);
+
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setInput(e.currentTarget.value);
@@ -54,7 +60,7 @@ export function SearchBox() {
     <>
       {show && (
         <div
-          className="flex flex-col w-80 items-stretch justify-stretch"
+          className="flex flex-col w-80 items-stretch justify-stretch shadow-xl rounded-xl bg-white bg-opacity-75 border border-gray-300 p-2 space-y-2"
           ref={containerRef}
         >
           <input
@@ -62,7 +68,7 @@ export function SearchBox() {
             autoComplete="off"
             autoCapitalize="off"
             autoCorrect="off"
-            className="flex-1 bg-black bg-opacity-75 border border-gray-300 rounded-md shadow-sm py-2 px-4 block w-full min-w-full sm:text-sm basis-full"
+            className="flex-1 bg-white bg-opacity-75 border border-gray-300 rounded-md shadow-sm py-2 px-4 block w-full min-w-full sm:text-sm basis-full"
             placeholder="Search"
             ref={inputRef}
             value={input}
@@ -74,7 +80,7 @@ export function SearchBox() {
             onChange={handleChange}
           />
           {matches.length > 0 && (
-            <div className="flex-1 flex flex-col bg-black bg-opacity-75 border-gray-300 rounded-md shadow-sm py-2 w-full sm:text-sm items-stretch justify-stretch space-y-2">
+            <div className="flex-1 flex flex-col bg-white bg-opacity-75 border-gray-300 rounded-md shadow-sm py-2 w-full sm:text-sm items-stretch justify-stretch space-y-2">
               {matches.map((node) => (
                 <MatchResult node={node} key={node.id} />
               ))}

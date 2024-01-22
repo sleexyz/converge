@@ -2,7 +2,6 @@ import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { Id, ToposorterStateManagerContext, TNode } from "./ToposorterState";
 import ReactTextareaAutosize from "react-textarea-autosize";
 import { format } from "date-fns";
-import { CommandLine } from "./CommandLine";
 import { useSelectedNode } from "./Selection";
 import { UIStateContext } from "./ui_state";
 
@@ -12,12 +11,11 @@ export function SelectionPane() {
 
   return (
     <div
-      className={`flex-1 flex flex-col bg-black w-full rounded-xl p-8 justify-between`}
+      className="bg-white h-[80vmin] border-1 border-gray-100 flex-1 flex flex-col w-full rounded-xl p-8 justify-between shadow-xl"
     >
       <div className="flex flex-col items-stretch">
         {tnode && <SelectionEditor tnode={tnode} id={selectedNode!.id} />}
       </div>
-      <CommandLine />
     </div>
   );
 }
@@ -60,7 +58,7 @@ function SelectionEditor({ tnode, id }: { tnode: TNode; id: Id }) {
   // Format as "September 5, 2021 at 12:00 PM"
   const formattedDate = format(tnode.createdAt, "MMMM d, yyyy 'at' h:mm a");
 
-  let typeStr = tnode.type ?? "task";
+  let typeStr: string = tnode.type ?? "task";
   typeStr = [typeStr[0].toUpperCase(), typeStr.slice(1)].join("");
 
   return (

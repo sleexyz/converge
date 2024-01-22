@@ -19,6 +19,7 @@ import {
 import { SelectedNodeRefContext, useSelectedNode } from "./Selection";
 import { useMakeStateAsync, useRefState, useResolveQueue } from "./state";
 import { v4 as uuidv4 } from "uuid";
+import CustomNodeStyles from "./custom_node.module.css";
 
 export const NodesContext = React.createContext<Node[]>([]);
 export const EdgesContext = React.createContext<Edge[]>([]);
@@ -117,6 +118,7 @@ export function CanvasController(props: { children: React.ReactNode }) {
           id: `${id}--${child}`,
           source: id,
           target: child,
+          className: CustomNodeStyles.edge,
         }))
       );
     }
@@ -187,15 +189,14 @@ export function CanvasController(props: { children: React.ReactNode }) {
     canvasStateRef,
   ]);
 
-
   // Sync effect:
   // - Loads initial nodes from upstream state.
   // - Updates canvas nodes from upstream changes.
   const [synced, setSynced] = React.useState(false);
-  const syncStartRunIdRef = React.useRef<string|null>(null);
+  const syncStartRunIdRef = React.useRef<string | null>(null);
   React.useEffect(() => {
     setSynced(false);
-    const syncStartRunId = uuidv4()
+    const syncStartRunId = uuidv4();
     syncStartRunIdRef.current = syncStartRunId;
     if (!nodesInitialized) {
       return;
@@ -224,7 +225,7 @@ export function CanvasController(props: { children: React.ReactNode }) {
         };
       });
       // signal upstream sync complete only if this is the latest update
-      if (syncStartRunId !== syncStartRunIdRef.current ) {
+      if (syncStartRunId !== syncStartRunIdRef.current) {
         return;
       }
       resolveQueue.consume();
@@ -278,6 +279,10 @@ function orderNodes(entries: [string, TNode][]): [string, TNode][] {
   // rank nodes
   let out = Toposort.sort(entries);
   out = out.sort(([_keyA, a], [_keyB, b]) => {
+    // const typeDiff = typeToPoints(b.type) - typeToPoints(a.type);
+    // if (typeDiff !== 0) {
+    //   return typeDiff;
+    // }
     const statusDiff = statusToPoints(b.status) - statusToPoints(a.status);
     if (statusDiff !== 0) {
       return statusDiff;
@@ -331,7 +336,11 @@ const getLayoutedElements = (
     align: "UL",
     ranker: "tight-tree",
     // ranker: 'longest-path',
-    esep: 10,
+    ranksep: 0,
+    edgesep: 0,
+    nodesep: 0,
+    marginx: 0,
+    marginy: 0,
   });
   for (const edge of edges) {
     g.setEdge(edge.source, edge.target);
@@ -356,6 +365,17 @@ const getLayoutedElements = (
     edges,
   };
 };
+
+// export function typeToPoints(type: TNode["type"]): number {
+//   switch (type) {
+//     case "project":
+//       return 2;
+//     case "goal":
+//       return 1;
+//     default:
+//       return 0;
+//   }
+// }
 
 export function statusToPoints(status: Status): number {
   switch (status) {

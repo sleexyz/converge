@@ -18,5 +18,8 @@
         "**/target": true,
         "**/node_modules": true,
         ".cargo": true,
+    },
+    "files.associations": {
+        "*.css": "tailwindcss"
     }
 }

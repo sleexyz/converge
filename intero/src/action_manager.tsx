@@ -21,7 +21,7 @@ export class ActionManager {
 
   async selectNode(id: Id) {
     await this.setSelectedNode(id);
-    await this.canvasManager.layoutNodesAndCenterSelected();
+    this.canvasManager.center(id);
   }
 
   async add(from?: Id, connectionType?: "parent" | "child") {
