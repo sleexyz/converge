@@ -3,6 +3,7 @@ import { CanvasManagerContext } from "./canvas_controller";
 import { Node } from "reactflow";
 import { ActionManagerContext } from "./action_manager";
 import { useSelectedNode } from "./Selection";
+import { MatchContainer, MatchResult, SearchContainer, SearchInput, onMouseDownOutside } from "./Box";
 
 export function SearchBox() {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -27,11 +28,11 @@ export function SearchBox() {
     };
   }, []);
 
-    useEffect(() => {
-        if (show) {
-            setInput("");
-        }
-    }, [show]);
+  useEffect(() => {
+    if (show) {
+      setInput("");
+    }
+  }, [show]);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,16 +60,8 @@ export function SearchBox() {
   return (
     <>
       {show && (
-        <div
-          className="flex flex-col w-80 items-stretch justify-stretch shadow-xl rounded-xl bg-white bg-opacity-75 border border-gray-300 p-2 space-y-2"
-          ref={containerRef}
-        >
-          <input
-            autoFocus
-            autoComplete="off"
-            autoCapitalize="off"
-            autoCorrect="off"
-            className="flex-1 bg-white bg-opacity-75 border border-gray-300 rounded-md shadow-sm py-2 px-4 block w-full min-w-full sm:text-sm basis-full"
+        <SearchContainer ref={containerRef}>
+          <SearchInput
             placeholder="Search"
             ref={inputRef}
             value={input}
@@ -80,52 +73,28 @@ export function SearchBox() {
             onChange={handleChange}
           />
           {matches.length > 0 && (
-            <div className="flex-1 flex flex-col bg-white bg-opacity-75 border-gray-300 rounded-md shadow-sm py-2 w-full sm:text-sm items-stretch justify-stretch space-y-2">
+            <MatchContainer>
               {matches.map((node) => (
-                <MatchResult node={node} key={node.id} />
+                <SearchMatchResult node={node} key={node.id} />
               ))}
-            </div>
+            </MatchContainer>
           )}
-        </div>
+        </SearchContainer>
       )}
     </>
   );
 }
 
-function MatchResult(props: { node: Node }) {
+function SearchMatchResult(props: { node: Node }) {
   const actionManager = useContext(ActionManagerContext)!;
   const handleOnClick = useCallback(() => {
     actionManager.selectNode(props.node.id);
   }, [props.node, actionManager]);
   const [selectedNode] = useSelectedNode();
-  let className =
-    "p-2 select-none cursor-pointer text-sm text-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 hover:text-gray-500 white-space-nowrap overflow-ellipsis min-w-0 w-full basis-full rounded-xl";
-  if (props.node.id === selectedNode?.id) {
-    className += " text-pink-500 hover:text-pink-600";
-  }
+  const isSelected = selectedNode?.id === props.node.id;
   return (
-    <a className={className} onClick={handleOnClick}>
+    <MatchResult onClick={handleOnClick} selected={isSelected}>
       {props.node.data.value}
-    </a>
+    </MatchResult>
   );
-}
-
-function onMouseDownOutside(
-  containerRef: React.RefObject<HTMLElement>,
-  callback: () => void
-) {
-  useEffect(() => {
-    const handleMouseDown = (e: MouseEvent) => {
-      if (containerRef.current?.contains(e.target as any)) {
-        return;
-      }
-      callback();
-    };
-    document.addEventListener("mousedown", handleMouseDown);
-    document.addEventListener("click", handleMouseDown);
-    return () => {
-      document.removeEventListener("mousedown", handleMouseDown);
-      document.removeEventListener("click", handleMouseDown);
-    };
-  }, [containerRef, callback]);
 }

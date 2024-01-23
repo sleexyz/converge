@@ -14,6 +14,7 @@ import { CanvasManager, CanvasManagerContext } from "./canvas_controller";
 import { ActionManager, ActionManagerContext } from "./action_manager";
 import { BaseDirectory, createDir, writeBinaryFile } from '@tauri-apps/api/fs';
 import { appDataDir } from "@tauri-apps/api/path";
+import { SearchContainer, SearchInput } from "./Box";
 
 
 class ArgType<_T> {
@@ -100,6 +101,33 @@ const commands = Object.fromEntries(
       },
       runCommand(args, {actionManager}) {
         actionManager.setStatus(args.subject, args.object);
+      },
+    }),
+    new Command({
+      command: "unset",
+      argsShape: {
+        subject: ArgType.Id,
+      },
+      runCommand(args, {actionManager}) {
+        actionManager.setStatus(args.subject, "unset");
+      },
+    }),
+    new Command({
+      command: "active",
+      argsShape: {
+        subject: ArgType.Id,
+      },
+      runCommand(args, {actionManager}) {
+        actionManager.setStatus(args.subject, "active");
+      },
+    }),
+    new Command({
+      command: "done",
+      argsShape: {
+        subject: ArgType.Id,
+      },
+      runCommand(args, {actionManager}) {
+        actionManager.setStatus(args.subject, "done");
       },
     }),
     new Command({
@@ -282,16 +310,14 @@ export function CommandLine() {
   }, []);
 
   return (
-    <input
-      autoFocus
+    <SearchContainer>
+    <SearchInput
       ref={inputRef}
-      type="text"
       placeholder="Command"
       onKeyDown={handleKeyDown}
       value={input}
       onChange={handleOnChange}
-      className="mt-3 px-4 py-2 text-2xl w-full border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
-      autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck="false"
-    ></input>
+    />
+  </SearchContainer>
   );
 }

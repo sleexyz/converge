@@ -45,9 +45,13 @@ export function CustomNode(props: {
     classes += ` ${CustomNodeStyles.goal}`;
   }
 
+  if (props.data.type === "task" || props.data.type == null) {
+    classes += ` ${CustomNodeStyles.task}`;
+  }
+
   return (
     <>
-      <Handle type="target" position={Position.Right} />
+      <Handle type="target" position={Position.Left} className={CustomNodeStyles.handle}/>
       <div
         className={`${classes}`}
         onClick={handleOnClick}
@@ -60,14 +64,14 @@ export function CustomNode(props: {
         )}
       </div>
       <div></div>
-      <Handle type="source" position={Position.Left} />
+      <Handle type="source" position={Position.Right} className={CustomNodeStyles.handle}/>
     </>
   );
 }
 
 function Chip(props: { children: React.ReactNode; className?: string }) {
   return (
-    <div className="font-mono absolute top-[-15px] right-[-25px] text-gray-500 font-bold rounded-full px-2 py-1 text-xs bg-white">
+    <div className="font-mono absolute top-[-10px] right-[-10px] text-white font-bold rounded-full text-xs bg-gray-500 h-6 w-6 flex justify-center items-center z-50">
       {props.children}
     </div>
   );
@@ -79,9 +83,9 @@ function ActiveSvg() {
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
-      strokeWidth={1.5}
+      strokeWidth={2}
       stroke="currentColor"
-      className="w-4 h-4"
+      className="w-3 h-3"
     >
       <path
         strokeLinecap="round"

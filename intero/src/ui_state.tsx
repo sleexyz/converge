@@ -11,8 +11,8 @@ export class UIState {
         this.commandLineRef?.current?.focus();
     };
 
-    titleRef: React.RefObject<HTMLInputElement> | null = null;
-    bindTitleRef = (ref: React.RefObject<HTMLInputElement> | null) => {
+    titleRef: React.RefObject<HTMLTextAreaElement> | null = null;
+    bindTitleRef = (ref: React.RefObject<HTMLTextAreaElement> | null) => {
         this.titleRef = ref;
     };
     focusTitle = () => {

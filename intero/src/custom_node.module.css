@@ -1,6 +1,9 @@
 
 .node {
-    @apply text-gray-500 bg-white rounded-2xl p-4 box-border shadow-md;
+    @apply text-gray-500 bg-white rounded-2xl py-2 px-4 box-border shadow-md;
+    @apply font-mono;
+    @apply max-w-md;
+    @apply whitespace-pre-wrap;
 }
 
 .done {
@@ -16,17 +19,25 @@
 
 
 .project {
-    @apply p-8 text-3xl font-bold font-mono;
+    @apply py-16;
 }
 .goal {
-    @apply p-4 text-xl font-bold;
+    @apply py-8;
+}
+.task {
 }
 
 .edge path {
-    /* stroke: ; */
-    /* stroke-width: 1px; */
+    /* stroke-opacity: 0.2; */
+    stroke-width: 1px;
 }
- 
+
+.handle {
+    @apply w-2 h-2;
+    @apply rounded-full;
+    @apply bg-gray-300;
+    @apply border-none;
+}
 
 @media (prefers-color-scheme: dark) {
     .edge path {

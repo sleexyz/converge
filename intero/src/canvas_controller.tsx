@@ -118,6 +118,8 @@ export function CanvasController(props: { children: React.ReactNode }) {
           id: `${id}--${child}`,
           source: id,
           target: child,
+          // type: "smoothstep",
+          type: "bezier",
           className: CustomNodeStyles.edge,
         }))
       );
@@ -332,15 +334,13 @@ const getLayoutedElements = (
 
   // apply layout
   g.setGraph({
-    rankdir: "RL",
+    rankdir: "LR",
     align: "UL",
-    ranker: "tight-tree",
-    // ranker: 'longest-path',
-    ranksep: 0,
+    // ranker: "tight-tree",
+    ranker: 'longest-path',
+    ranksep: 12,
     edgesep: 0,
     nodesep: 0,
-    marginx: 0,
-    marginy: 0,
   });
   for (const edge of edges) {
     g.setEdge(edge.source, edge.target);

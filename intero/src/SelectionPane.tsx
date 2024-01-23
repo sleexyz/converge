@@ -1,7 +1,7 @@
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { Id, ToposorterStateManagerContext, TNode } from "./ToposorterState";
 import ReactTextareaAutosize from "react-textarea-autosize";
-import { format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { useSelectedNode } from "./Selection";
 import { UIStateContext } from "./ui_state";
 
@@ -10,10 +10,8 @@ export function SelectionPane() {
   const tnode = selectedNode?.data as TNode | undefined;
 
   return (
-    <div
-      className="bg-white h-[80vmin] border-1 border-gray-100 flex-1 flex flex-col w-full rounded-xl p-8 justify-between shadow-xl"
-    >
-      <div className="flex flex-col items-stretch">
+    <div className="h-max-[80vmin] flex flex-col mt-2 w-80 items-stretch justify-stretch shadow-xl rounded-2xl bg-white bg-opacity-75 border border-gray-300 p-2 space-y-2">
+      <div className="p-2 flex flex-col items-stretch bg-white h-full rounded-2xl border-gray-300 border">
         {tnode && <SelectionEditor tnode={tnode} id={selectedNode!.id} />}
       </div>
     </div>
@@ -34,11 +32,11 @@ function SelectionEditor({ tnode, id }: { tnode: TNode; id: Id }) {
   }, [tnode]);
 
   const handleValueChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
+    (event: React.ChangeEvent<HTMLTextAreaElement>) => {
       setValue(event.target.value);
       stateManager.setValue(id, event.target.value);
     },
-    [stateManager,  id]
+    [stateManager, id]
   );
 
   const handleNotesChange = useCallback(
@@ -49,41 +47,36 @@ function SelectionEditor({ tnode, id }: { tnode: TNode; id: Id }) {
     [stateManager, id]
   );
 
-  const titleRef = useRef<HTMLInputElement>(null);
+  const titleRef = useRef<HTMLTextAreaElement>(null);
   const uiState = useContext(UIStateContext)!;
   useEffect(() => {
     uiState.bindTitleRef(titleRef);
   }, [titleRef]);
 
-  // Format as "September 5, 2021 at 12:00 PM"
-  const formattedDate = format(tnode.createdAt, "MMMM d, yyyy 'at' h:mm a");
-
-  let typeStr: string = tnode.type ?? "task";
-  typeStr = [typeStr[0].toUpperCase(), typeStr.slice(1)].join("");
+  const formattedDate = formatDistanceToNow(tnode.createdAt, { addSuffix: true });
 
   return (
     <>
-      <div className="space-y-8 flex flex-col">
-        <div className="space-y-4 flex flex-col">
-          <input
-            value={value || ""}
-            onChange={handleValueChange}
-            // onBlur={handleValueBlur}
-            placeholder="Title"
-            ref={titleRef}
-            className="text-left box-content text-2xl rounded-md shadow-sm opacity-80 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-gray-500 border-gray-600 m-0 p-2 border"
-          />
-          <span className="text-sm text-gray-500">
-            {typeStr} created on {formattedDate}
-          </span>
-        </div>
+      <div className="space-y-2 flex flex-col">
+        <ReactTextareaAutosize
+          value={value || ""}
+          onChange={handleValueChange}
+          // onBlur={handleValueBlur}
+          placeholder="Untitled"
+          ref={titleRef}
+          className="text-left box-content text-2xl rounded-md p-2 border-none shadow-none outline-none resize-none"
+        />
         <ReactTextareaAutosize
           value={notes || ""}
           onChange={handleNotesChange}
           minRows={5}
-          className="text-left box-content text-lg rounded-md shadow-sm opacity-80 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-gray-500 border-gray-600 m-0 p-2 border"
+          placeholder="Notes"
+          className="text-left box-content text-lg rounded-md p-2 m-0 border-0 outline-none resize-none"
         />
       </div>
+      <span className="px-2 text-sm py-4 text-gray-500">
+        Created {formattedDate}
+      </span>
     </>
   );
 }

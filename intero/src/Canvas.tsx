@@ -23,9 +23,14 @@ import { UIStateContext } from "./ui_state";
 import { SearchBox } from "./SearchBox";
 import { SelectionPane } from "./SelectionPane";
 import { CommandLine } from "./CommandLine";
+import CustomEdge from "./CustomEdge";
 
 const nodeTypes = {
   custom: CustomNode,
+};
+
+const edgeTypes = {
+  custom: CustomEdge,
 };
 
 export function Canvas() {
@@ -85,22 +90,25 @@ export function Canvas() {
       nodeOrigin={[0, 0.5]}
       nodes={nodes}
       edges={edges}
+      // snapToGrid={true}
+      // snapGrid={[50, 50]}
+      edgeTypes={edgeTypes}
       nodeTypes={nodeTypes}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       onConnect={onConnect}
       nodesDraggable
     >      
-      <Panel position="top-center">
-        <SearchBox />
-      </Panel>
-      <Panel position="top-right" className="m-0 h-full">
+      <Panel position="top-left" className="m-0 h-full">
         <div className="flex items-center justify-center align-center h-full">
             <SelectionPane />
         </div>
       </Panel>
-      <Panel position="bottom-right">
+      <Panel position="top-center" className="mt-8 mx-0">
         <CommandLine />
+      </Panel>
+      <Panel position="top-left" className="mt-8 mx-0">
+        <SearchBox />
       </Panel>
       <Controls />
     </ReactFlow>
