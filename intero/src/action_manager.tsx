@@ -5,10 +5,11 @@ import {
   Status,
   ToposorterStateManager,
   ToposorterStateManagerContext,
+  statusToPoints,
 } from "./ToposorterState";
 import { UIState, UIStateContext } from "./ui_state";
 import { useSelectedNode } from "./Selection";
-import { CanvasManager, CanvasManagerContext, statusToPoints } from "./canvas_controller";
+import { CanvasManager, CanvasManagerContext} from "./canvas_controller";
 
 export class ActionManager {
   constructor(
@@ -30,6 +31,13 @@ export class ActionManager {
     await this.setSelectedNode(id);
     this.uiState.focusTitle();
 
+    await this.canvasManager.layoutNodesAndCenterSelected();
+  }
+
+  async setPriority(id: Id, priority: number) {
+    await this.stateManager.setPriority(id, priority);
+
+    await this.setSelectedNode(id);
     await this.canvasManager.layoutNodesAndCenterSelected();
   }
 

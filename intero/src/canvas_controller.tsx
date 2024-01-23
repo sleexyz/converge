@@ -13,7 +13,9 @@ import {
   Status,
   TNode,
   TNodeRow,
-  Toposort,
+  Toposorter,
+  compareNodes,
+  compareVecs,
   useToposorterState,
 } from "./ToposorterState";
 import { SelectedNodeRefContext, useSelectedNode } from "./Selection";
@@ -279,22 +281,10 @@ function useSelectActiveOnMount(canvasManager: CanvasManager, synced: boolean) {
 // Ranks nodes and rearranges children ordering
 function orderNodes(entries: [string, TNode][]): [string, TNode][] {
   // rank nodes
-  let out = Toposort.sort(entries);
+  let out = Toposorter.sort(entries);
+  // let out = entries;
   out = out.sort(([_keyA, a], [_keyB, b]) => {
-    // const typeDiff = typeToPoints(b.type) - typeToPoints(a.type);
-    // if (typeDiff !== 0) {
-    //   return typeDiff;
-    // }
-    const statusDiff = statusToPoints(b.status) - statusToPoints(a.status);
-    if (statusDiff !== 0) {
-      return statusDiff;
-    }
-    // prefer later createdAt
-    const timeDiff = b.createdAt.getTime() - a.createdAt.getTime();
-    if (timeDiff !== 0) {
-      return timeDiff;
-    }
-    return 0;
+    return compareVecs(a.__maxVec!, b.__maxVec!);
   });
 
   // Re-order edges in place
@@ -365,25 +355,3 @@ const getLayoutedElements = (
     edges,
   };
 };
-
-// export function typeToPoints(type: TNode["type"]): number {
-//   switch (type) {
-//     case "project":
-//       return 2;
-//     case "goal":
-//       return 1;
-//     default:
-//       return 0;
-//   }
-// }
-
-export function statusToPoints(status: Status): number {
-  switch (status) {
-    case "done":
-      return -1;
-    case "active":
-      return 1;
-    default:
-      return 0;
-  }
-}

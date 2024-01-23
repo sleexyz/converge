@@ -102,7 +102,7 @@ export function Canvas() {
       <Panel position="top-left" className="m-0 h-full">
         <div className="flex items-center justify-center align-center h-full">
             <SelectionPane />
-        </div>
+        </div>right
       </Panel>
       <Panel position="top-center" className="mt-8 mx-0">
         <CommandLine />

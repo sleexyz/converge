@@ -12,23 +12,30 @@ import { useSelectedNode } from "./Selection";
 import { UIStateContext } from "./ui_state";
 import { CanvasManager, CanvasManagerContext } from "./canvas_controller";
 import { ActionManager, ActionManagerContext } from "./action_manager";
-import { BaseDirectory, createDir, writeBinaryFile } from '@tauri-apps/api/fs';
+import { BaseDirectory, createDir, writeBinaryFile } from "@tauri-apps/api/fs";
 import { appDataDir } from "@tauri-apps/api/path";
 import { SearchContainer, SearchInput } from "./Box";
-
 
 class ArgType<_T> {
   static TNode = new ArgType<TNodeRow>();
   static Id = new ArgType<Id>();
   static string = new ArgType<string>();
-  static parentOrChild = new ArgType<"parent"|"child">();
+  static parentOrChild = new ArgType<"parent" | "child">();
 }
 
 type TypeOfArgType<T> = T extends ArgType<infer U> ? U : never;
 
 interface ArgsShape {
-  subject?: typeof ArgType.TNode | typeof ArgType.string | typeof ArgType.Id | typeof ArgType.parentOrChild;
-  object?: typeof ArgType.TNode | typeof ArgType.string | typeof ArgType.Id | typeof ArgType.parentOrChild;
+  subject?:
+    | typeof ArgType.TNode
+    | typeof ArgType.string
+    | typeof ArgType.Id
+    | typeof ArgType.parentOrChild;
+  object?:
+    | typeof ArgType.TNode
+    | typeof ArgType.string
+    | typeof ArgType.Id
+    | typeof ArgType.parentOrChild;
 }
 
 type VariablesFromArgs<A extends ArgsShape> = {
@@ -45,9 +52,9 @@ class Command<A extends ArgsShape> {
       runCommand(
         variables: VariablesFromArgs<A>,
         ctx: {
-          stateManager: ToposorterStateManager,
-          canvasManager: CanvasManager,
-          actionManager: ActionManager,
+          stateManager: ToposorterStateManager;
+          canvasManager: CanvasManager;
+          actionManager: ActionManager;
         }
       ): void;
     }
@@ -58,9 +65,8 @@ const commands = Object.fromEntries(
   [
     new Command({
       command: "layout",
-      argsShape: {
-      },
-      runCommand(_args, {canvasManager}) {
+      argsShape: {},
+      runCommand(_args, { canvasManager }) {
         canvasManager.layoutNodesAndCenterSelected();
       },
     }),
@@ -69,7 +75,7 @@ const commands = Object.fromEntries(
       argsShape: {
         subject: ArgType.Id,
       },
-      runCommand(args, {stateManager}) {
+      runCommand(args, { stateManager }) {
         stateManager.deleteNode(args.subject);
       },
     }),
@@ -79,7 +85,7 @@ const commands = Object.fromEntries(
         subject: ArgType.Id,
         object: ArgType.parentOrChild,
       },
-      runCommand(args, {actionManager}) {
+      runCommand(args, { actionManager }) {
         actionManager.add(args.subject, args.object);
       },
     }),
@@ -89,7 +95,7 @@ const commands = Object.fromEntries(
         subject: ArgType.Id,
         object: ArgType.Id,
       },
-      runCommand(args, {stateManager}) {
+      runCommand(args, { stateManager }) {
         stateManager.addEdge(args.subject, args.object);
       },
     }),
@@ -99,7 +105,7 @@ const commands = Object.fromEntries(
         subject: ArgType.Id,
         object: ArgType.string,
       },
-      runCommand(args, {actionManager}) {
+      runCommand(args, { actionManager }) {
         actionManager.setStatus(args.subject, args.object);
       },
     }),
@@ -108,7 +114,8 @@ const commands = Object.fromEntries(
       argsShape: {
         subject: ArgType.Id,
       },
-      runCommand(args, {actionManager}) {
+
+      runCommand(args, { actionManager }) {
         actionManager.setStatus(args.subject, "unset");
       },
     }),
@@ -117,7 +124,7 @@ const commands = Object.fromEntries(
       argsShape: {
         subject: ArgType.Id,
       },
-      runCommand(args, {actionManager}) {
+      runCommand(args, { actionManager }) {
         actionManager.setStatus(args.subject, "active");
       },
     }),
@@ -126,8 +133,53 @@ const commands = Object.fromEntries(
       argsShape: {
         subject: ArgType.Id,
       },
-      runCommand(args, {actionManager}) {
+      runCommand(args, { actionManager }) {
         actionManager.setStatus(args.subject, "done");
+      },
+    }),
+    new Command({
+      command: "p0",
+      argsShape: {
+        subject: ArgType.Id,
+      },
+      runCommand(args, { actionManager }) {
+        actionManager.setPriority(args.subject, 1);
+      },
+    }),
+    new Command({
+      command: "p1",
+      argsShape: {
+        subject: ArgType.Id,
+      },
+      runCommand(args, { actionManager }) {
+        actionManager.setPriority(args.subject, 1);
+      },
+    }),
+    new Command({
+      command: "p2",
+      argsShape: {
+        subject: ArgType.Id,
+      },
+      runCommand(args, { actionManager }) {
+        actionManager.setPriority(args.subject, 2);
+      },
+    }),
+    new Command({
+      command: "p3",
+      argsShape: {
+        subject: ArgType.Id,
+      },
+      runCommand(args, { actionManager }) {
+        actionManager.setPriority(args.subject, 3);
+      },
+    }),
+    new Command({
+      command: "p4",
+      argsShape: {
+        subject: ArgType.Id,
+      },
+      runCommand(args, { actionManager }) {
+        actionManager.setPriority(args.subject, 4);
       },
     }),
     new Command({
@@ -136,7 +188,7 @@ const commands = Object.fromEntries(
         subject: ArgType.Id,
         object: ArgType.string,
       },
-      runCommand(args, {actionManager}) {
+      runCommand(args, { actionManager }) {
         actionManager.setType(args.subject, args.object);
       },
     }),
@@ -145,7 +197,7 @@ const commands = Object.fromEntries(
       argsShape: {},
       async runCommand(_args, _ctx) {
         window.location.reload();
-      }
+      },
     }),
     new Command({
       command: "backup",
@@ -153,7 +205,7 @@ const commands = Object.fromEntries(
       async runCommand(_args, _ctx) {
         const data = window.localStorage.getItem("toposorter");
         if (data) {
-          const blob = new Blob([data], { type: 'text/json' });
+          const blob = new Blob([data], { type: "text/json" });
           const fileName = `toposorter-backup-${new Date().toISOString()}.json`;
           console.log(`Writing backup to ${fileName}`);
           const appDataDirPath = await appDataDir();
@@ -165,7 +217,7 @@ const commands = Object.fromEntries(
         } else {
           console.error("No data found in localStorage for 'toposorter'");
         }
-      }
+      },
     }),
   ].map((command) => [command.data.command, command])
 );
@@ -252,7 +304,11 @@ export function CommandLine() {
       for (const [i, arg] of args.entries()) {
         mapArgs[i](arg);
       }
-      command.data.runCommand(variables, {actionManager, stateManager, canvasManager});
+      command.data.runCommand(variables, {
+        actionManager,
+        stateManager,
+        canvasManager,
+      });
       setError(null);
       setInput("");
     } catch (e: unknown) {
@@ -292,32 +348,31 @@ export function CommandLine() {
     uiState.bindCommandLineRef(inputRef);
   }, [inputRef]);
 
-
   useEffect(() => {
     const handleKeyUp = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === '/') {
+      if ((e.metaKey || e.ctrlKey) && e.key === "/") {
         inputRef.current?.focus();
       }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         inputRef.current?.focus();
       }
     };
-  
-    document.addEventListener('keyup', handleKeyUp);
+
+    document.addEventListener("keyup", handleKeyUp);
     return () => {
-      document.removeEventListener('keyup', handleKeyUp);
+      document.removeEventListener("keyup", handleKeyUp);
     };
   }, []);
 
   return (
     <SearchContainer>
-    <SearchInput
-      ref={inputRef}
-      placeholder="Command"
-      onKeyDown={handleKeyDown}
-      value={input}
-      onChange={handleOnChange}
-    />
-  </SearchContainer>
+      <SearchInput
+        ref={inputRef}
+        placeholder="Command"
+        onKeyDown={handleKeyDown}
+        value={input}
+        onChange={handleOnChange}
+      />
+    </SearchContainer>
   );
 }

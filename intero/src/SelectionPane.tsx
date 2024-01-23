@@ -77,6 +77,9 @@ function SelectionEditor({ tnode, id }: { tnode: TNode; id: Id }) {
       <span className="px-2 text-sm py-4 text-gray-500">
         Created {formattedDate}
       </span>
+      <pre>
+        {JSON.stringify(tnode.__maxVec, null, 2)}
+      </pre>
     </>
   );
 }

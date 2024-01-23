@@ -14,11 +14,13 @@ export interface TNode {
   createdAt: Date;
   status?: Status;
   type?: TNodeType;
+  priority?: number;
   notes?: string;
   children: Id[];
+  __maxVec?: number[];
 }
 
-export class Toposort {
+export class Toposorter {
   visited = new Set<Id>();
   nodes: Record<Id, TNode> = {};
 
@@ -28,7 +30,7 @@ export class Toposort {
 
   // Returns topologically sorted nodes.
   static sort(entries: [key: Id, value: TNode][]): [key: Id, value: TNode][] {
-    return new Toposort(entries).sort();
+    return new Toposorter(entries).sort();
   }
 
   // Visit all nodes.
@@ -52,12 +54,56 @@ export class Toposort {
     if (!node) {
       return;
     }
+    let maxVec = makeScoreVector(node);
     for (let childId of node.children) {
       this.visitChildren(childId);
+      maxVec = chooseMaxVec(maxVec, this.nodes[childId].__maxVec!);
     }
-
+    this.nodes[key] = { ...this.nodes[key], __maxVec: maxVec };
     this.visited.add(key);
   }
+}
+
+function chooseMaxVec(vecA: number[], vecB: number[]): number[] {
+  return compareVecs(vecA, vecB) > 0 ? vecB : vecA;
+}
+
+export function compareVecs(vecA: number[], vecB: number[]): number {
+  for (let i = 0; i < vecA.length; i++) {
+    if (vecA[i] < vecB[i]) {
+      return 1;
+    }
+    if (vecA[i] > vecB[i]) {
+      return -1;
+    }
+  }
+  return 0;
+}
+
+/**
+ * Higher score is better.
+ */
+function makeScoreVector(node: TNode): number[] {
+  return [
+    statusToPoints(node.status),
+    priorityToPoints(node.priority),
+    node.createdAt.getTime(),
+  ];
+}
+
+export function statusToPoints(status: Status): number {
+  switch (status) {
+    case "done":
+      return -1;
+    case "active":
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+export function priorityToPoints(priority: number | undefined): number {
+  return -1 * (priority ?? 3);
 }
 
 export interface ToposorterStateData {
@@ -210,11 +256,18 @@ export class ToposorterStateManager {
   setType = this.bindAction((id: Id, type: string) => {
     return produce((draft: Draft<ToposorterStateData>) => {
       if (type !== "task" && type !== "goal" && type !== "project") {
-        throw new Error(
-          `Invalid type ${type}.`
-        );
+        throw new Error(`Invalid type ${type}.`);
       }
       draft.nodes[id].type = type;
+    });
+  });
+
+  setPriority = this.bindAction((id: Id, priority: number) => {
+    return produce((draft: Draft<ToposorterStateData>) => {
+      if (draft.nodes[id].priority === priority) {
+        throw new AbortError();
+      }
+      draft.nodes[id].priority = priority;
     });
   });
 
@@ -260,7 +313,7 @@ export function ToposorterStateProvider({
       {
         nodes: {},
       },
-      x => x,
+      (x) => x
     );
   const [state, setState] = useMakeStateAsync([_state, _setState]);
 

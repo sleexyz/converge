@@ -49,6 +49,15 @@ export function CustomNode(props: {
     classes += ` ${CustomNodeStyles.task}`;
   }
 
+  let priorityText = "";
+  if (props.data.priority != null) {
+    if (props.data.priority === 0) {
+      priorityText = "!";
+    } else {
+      priorityText = "∘".repeat(props.data.priority);
+    }
+  }
+
   return (
     <>
       <Handle type="target" position={Position.Left} className={CustomNodeStyles.handle}/>
@@ -58,12 +67,14 @@ export function CustomNode(props: {
       >
         {title}
         {props.data.status === "active" && (
-          <Chip>
+          <Chip className="top-[-10px] right-[-10px] bg-gray-500 text-white" >
             <ActiveSvg />
           </Chip>
         )}
+        <div className="absolute top-[-10px] left-4 text-gray-300 text-xl">
+          {priorityText}
+        </div>
       </div>
-      <div></div>
       <Handle type="source" position={Position.Right} className={CustomNodeStyles.handle}/>
     </>
   );
@@ -71,7 +82,7 @@ export function CustomNode(props: {
 
 function Chip(props: { children: React.ReactNode; className?: string }) {
   return (
-    <div className="font-mono absolute top-[-10px] right-[-10px] text-white font-bold rounded-full text-xs bg-gray-500 h-6 w-6 flex justify-center items-center z-50">
+    <div className={["font-mono absolute font-bold rounded-full text-x h-6 w-6 flex justify-center items-center z-50", props.className].join(' ')}>
       {props.children}
     </div>
   );

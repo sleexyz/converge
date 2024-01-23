@@ -36,7 +36,15 @@ export function useLocalStorageState<T>(
   }, []);
 
   React.useEffect(() => {
-    localStorage.setItem(key, JSON.stringify(state));
+    localStorage.setItem(key, JSON.stringify(state, (key, value) => {
+      // if (key === "createdAt") {
+      //   return value.toISOString();
+      // }
+      if (key.startsWith("__")) {
+        return undefined;
+      }
+      return value;
+    }));
   }, [key, state]);
 
   return [state, setState, ref];
