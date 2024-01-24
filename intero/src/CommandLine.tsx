@@ -15,6 +15,7 @@ import { ActionManager, ActionManagerContext } from "./action_manager";
 import { BaseDirectory, createDir, writeBinaryFile } from "@tauri-apps/api/fs";
 import { appDataDir } from "@tauri-apps/api/path";
 import { SearchContainer, SearchInput } from "./Box";
+import { HideObj, PreferencesManager, PreferencesManagerContext } from "./preference_state";
 
 class ArgType<_T> {
   static TNode = new ArgType<TNodeRow>();
@@ -55,6 +56,7 @@ class Command<A extends ArgsShape> {
           stateManager: ToposorterStateManager;
           canvasManager: CanvasManager;
           actionManager: ActionManager;
+          preferencesManager: PreferencesManager;
         }
       ): void;
     }
@@ -193,6 +195,26 @@ const commands = Object.fromEntries(
       },
     }),
     new Command({
+      command: "hide",
+      argsShape: {
+        object: ArgType.string,
+      },
+      async runCommand(args, { preferencesManager, canvasManager }) {
+        await preferencesManager.setFilter(args.object as keyof HideObj, true);
+        canvasManager.layoutNodes();
+      },
+    }),
+    new Command({
+      command: "show",
+      argsShape: {
+        object: ArgType.string,
+      },
+      async runCommand(args, { preferencesManager, canvasManager }) {
+        await preferencesManager.setFilter(args.object as keyof HideObj, false);
+        canvasManager.layoutNodes();
+      },
+    }),
+    new Command({
       command: "reload",
       argsShape: {},
       async runCommand(_args, _ctx) {
@@ -272,6 +294,7 @@ export function CommandLine() {
   const setError = useContext(SetErrorContext)!;
   const stateManager = useContext(ToposorterStateManagerContext)!;
   const actionManager = useContext(ActionManagerContext)!;
+  const preferencesManager = useContext(PreferencesManagerContext)!;
   const state = useContext(ToposorterStateContext)!;
 
   const boundVariables = useBoundVariablesFromContext();
@@ -308,6 +331,7 @@ export function CommandLine() {
         actionManager,
         stateManager,
         canvasManager,
+        preferencesManager
       });
       setError(null);
       setInput("");

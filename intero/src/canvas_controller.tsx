@@ -22,6 +22,7 @@ import { SelectedNodeRefContext, useSelectedNode } from "./Selection";
 import { useMakeStateAsync, useRefState, useResolveQueue } from "./state";
 import { v4 as uuidv4 } from "uuid";
 import CustomNodeStyles from "./custom_node.module.css";
+import { PreferencesContext, applyPreferencesFilter } from "./preference_state";
 
 export const NodesContext = React.createContext<Node[]>([]);
 export const EdgesContext = React.createContext<Edge[]>([]);
@@ -102,10 +103,13 @@ export function CanvasController(props: { children: React.ReactNode }) {
     []
   );
 
+  const preferences = React.useContext(PreferencesContext)!;
+
   const [initialNodes, initialEdges] = useMemo(() => {
     const initialNodes = [];
     const initialEdges = [];
     let entries = Object.entries(tNodes);
+    entries = applyPreferencesFilter(preferences, entries);
     entries = orderNodes(entries);
 
     for (const [id, node] of entries) {
@@ -127,7 +131,7 @@ export function CanvasController(props: { children: React.ReactNode }) {
       );
     }
     return [initialNodes, initialEdges];
-  }, [tNodes]);
+  }, [tNodes, preferences]);
 
   const [_canvasState, _setCanvasState, canvasStateRef] = useRefState<{
     nodes: Node[];
@@ -298,14 +302,13 @@ function orderNodes(entries: [string, TNode][]): [string, TNode][] {
 
   for (let [i, node] of out) {
     const newNode = { ...node };
-    newNode.children = [...node.children].sort((a, b) => {
-      const aIndex = nodeIndicies.get(a);
-      const bIndex = nodeIndicies.get(b);
-      if (aIndex === undefined || bIndex === undefined) {
-        throw new Error(`Could not find index for ${a} or ${b}`);
-      }
-      return aIndex - bIndex;
-    });
+    newNode.children = [...node.children]
+      .filter((child) => nodeIndicies.has(child))
+      .sort((a, b) => {
+        const aIndex = nodeIndicies.get(a)!;
+        const bIndex = nodeIndicies.get(b)!;
+        return aIndex - bIndex;
+      });
     newOut.push([i, newNode]);
   }
 
@@ -328,7 +331,7 @@ const getLayoutedElements = (
     rankdir: "LR",
     align: "UL",
     // ranker: "tight-tree",
-    ranker: 'longest-path',
+    ranker: "longest-path",
     ranksep: 12,
     edgesep: 0,
     nodesep: 0,

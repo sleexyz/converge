@@ -8,11 +8,11 @@ import {
   useToposorterState,
 } from "./ToposorterState";
 import { ReactFlowProvider } from "reactflow";
-import { SelectionPane } from "./SelectionPane";
-import { SelectionProvider, useSelectedNode } from "./Selection";
+import { SelectionProvider } from "./Selection";
 import { ActivityLogProvider, useSyncActivityState } from "./activity";
 import { CanvasController } from "./canvas_controller";
 import { ActionManagerProvider } from "./action_manager";
+import { PreferencesProvider } from "./preference_state";
 
 function App() {
   useGlobalShortcut();
@@ -23,11 +23,13 @@ function App() {
         <ToposorterStateProvider>
           <ActivityLogProvider>
             <SelectionProvider>
-              <CanvasController>
-                <ActionManagerProvider>
-                  <ToposorterView />
-                </ActionManagerProvider>
-              </CanvasController>
+              <PreferencesProvider>
+                <CanvasController>
+                  <ActionManagerProvider>
+                    <ToposorterView />
+                  </ActionManagerProvider>
+                </CanvasController>
+              </PreferencesProvider>
             </SelectionProvider>
           </ActivityLogProvider>
         </ToposorterStateProvider>
@@ -40,7 +42,6 @@ function ToposorterView() {
   const error = useError();
 
   useSyncActivityState();
-  
 
   return (
     <div className="absolute h-full w-full flex justify-start items-start">
