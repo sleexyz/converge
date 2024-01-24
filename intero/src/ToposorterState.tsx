@@ -18,6 +18,7 @@ export interface TNode {
   notes?: string;
   children: Id[];
   __maxVec?: number[];
+  __parents?: Id[];
 }
 
 export class Toposorter {
@@ -54,12 +55,14 @@ export class Toposorter {
     if (!node) {
       return;
     }
+
     let maxVec = makeScoreVector(node);
     for (let childId of node.children) {
       this.visitChildren(childId);
       maxVec = chooseMaxVec(maxVec, this.nodes[childId].__maxVec!);
+      this.nodes[childId].__parents?.push(key);
     }
-    this.nodes[key] = { ...this.nodes[key], __maxVec: maxVec };
+    this.nodes[key] = { ...this.nodes[key], __maxVec: maxVec, __parents: [] };
     this.visited.add(key);
   }
 }
@@ -139,6 +142,50 @@ export class ToposorterState {
     return null;
   }
 
+  getRelevantNodesForSelection(id: Id): Set<Id> {
+    const selected = this.getNode(id);
+    const relevant = new Set<Id>();
+    if (!selected) {
+      return relevant;
+    }
+    this.collectDescendants(id, relevant);
+    // Hack, but works:
+    relevant.delete(id);
+    this.collectAncestors(id, relevant);
+    // console.log(relevant);
+    return relevant
+  }
+
+  collectAncestors(id: Id, set: Set<Id>) {
+    const node = this.getNode(id);
+    if (!node) {
+      return;
+    }
+    // Just in case, break cycles
+    if (set.has(id)) {
+      return;
+    }
+    set.add(id);
+    console.log(node.__parents);
+    for (const parent of node.__parents ?? []) {
+      this.collectAncestors(parent, set);
+    }
+  }
+  collectDescendants(id: Id, set: Set<Id>) {
+    const node = this.getNode(id);
+    if (!node) {
+      return;
+    }
+    // Just in case, break cycles
+    if (set.has(id)) {
+      return;
+    }
+    set.add(id);
+    for (const child of node.children) {
+      this.collectDescendants(child, set);
+    }
+  }
+
   reconcileId(idPrefix: string): TNodeRow {
     let retId = undefined;
     for (let id of Object.keys(this.state.nodes)) {
@@ -154,6 +201,19 @@ export class ToposorterState {
     }
     return { id: retId, data: this.state.nodes[retId] };
   }
+}
+
+function withNormalization(fn: (state: ToposorterStateData) => ToposorterStateData): (state: ToposorterStateData) => ToposorterStateData {
+  return (state: ToposorterStateData) => {
+    const input = fn(state);
+    const entries = Object.entries(state.nodes);
+    const sortedEntries = Toposorter.sort(entries);
+    const out = {
+      ...input,
+      nodes: Object.fromEntries(sortedEntries)
+    };
+    return out;
+  };
 }
 
 export class ToposorterStateManager {
@@ -307,15 +367,15 @@ export function ToposorterStateProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [_state, _setState, stateRef] =
+  const [__state, _setState, stateRef] =
     useLocalStorageState<ToposorterStateData>(
       "toposorter",
       {
         nodes: {},
       },
-      (x) => x
+      withNormalization((x) => x)
     );
-  const [state, setState] = useMakeStateAsync([_state, _setState]);
+  const [state, setState] = useMakeStateAsync([__state, _setState]);
 
   const [error, setError] = React.useState<null | Error>(null);
   const trySetState = async (

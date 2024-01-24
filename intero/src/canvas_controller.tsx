@@ -281,7 +281,8 @@ function useSelectActiveOnMount(canvasManager: CanvasManager, synced: boolean) {
 // Ranks nodes and rearranges children ordering
 function orderNodes(entries: [string, TNode][]): [string, TNode][] {
   // rank nodes
-  let out = Toposorter.sort(entries);
+  let out = [...entries];
+  // out = Toposorter.sort(entries);
   // let out = entries;
   out = out.sort(([_keyA, a], [_keyB, b]) => {
     return compareVecs(a.__maxVec!, b.__maxVec!);

@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useState,
 } from "react";
 import { useOnSelectionChange, useStoreApi } from "reactflow";
 import { Id, TNodeRow, ToposorterStateManagerContext } from "./ToposorterState";
@@ -18,6 +19,9 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
 
   const [selectedNode, _setSelectedNode, selectedNodeRef] =
     useRefState<TNodeRow | null>(() => null);
+
+  const [relevantNodes, _setRelevantNodes] =
+    useState<Set<Id> | null>(() => null);
 
   const store = useStoreApi();
 
@@ -38,6 +42,8 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
         id,
       };
       _setSelectedNode(row);
+      _setRelevantNodes(toposorterStateManager.state().getRelevantNodesForSelection(id));
+
       // console.log("selected node", row);
       const { addSelectedNodes } = store.getState();
       addSelectedNodes([id]);
@@ -65,7 +71,9 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
   return (
     <SelectedNodeContext.Provider value={ret}>
       <SelectedNodeRefContext.Provider value={selectedNodeRef}>
-        {children}
+        <RelevantNodesContext.Provider value={relevantNodes}>
+          {children}
+        </RelevantNodesContext.Provider>
       </SelectedNodeRefContext.Provider>
     </SelectedNodeContext.Provider>
   );
@@ -74,6 +82,13 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
 export const SelectedNodeRefContext =
   createContext<React.MutableRefObject<TNodeRow | null> | null>(null);
 
+export const RelevantNodesContext = createContext<Set<Id> | null>(null);
+
 export function useSelectedNode() {
   return useContext(SelectedNodeContext)!;
+}
+
+export function useIsRelevantNode(id: Id): null | boolean {
+  const relevantNodes = useContext(RelevantNodesContext)!;
+  return relevantNodes?.has(id);
 }

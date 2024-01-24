@@ -3,12 +3,16 @@ import { UIStateContext } from "./ui_state";
 import { Handle, Position } from "reactflow";
 import { TNode } from "./ToposorterState";
 import CustomNodeStyles from "./custom_node.module.css";
+import { useIsRelevantNode } from "./Selection";
 
 export function CustomNode(props: {
   data: TNode;
   id: string;
   selected: boolean;
 }) {
+
+  let isRelevant = useIsRelevantNode(props.id);
+  
   let classes = `${CustomNodeStyles.node}`;
   let chipText = "";
 
@@ -22,6 +26,10 @@ export function CustomNode(props: {
 
   if (props.selected) {
     classes += ` ${CustomNodeStyles.selected}`;
+  }
+
+  if (isRelevant !== null && !isRelevant) {
+    classes += ` opacity-30`;
   }
 
   const uiState = useContext(UIStateContext)!;

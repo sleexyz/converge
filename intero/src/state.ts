@@ -1,9 +1,15 @@
 import * as React from "react";
 
-export function useRefState<T>(initialValue: () => T) {
-  const [state, setState] = React.useState(initialValue());
+export function useRefState<T>(initialValue: () => T, normalizeState: (value: T) => T = x => x) {
+  const [_state, setState] = React.useState(initialValue());
+
+  const state = React.useMemo(() => {
+    return normalizeState(_state);
+  }, [_state]);
+
   const ref = React.useRef(state);
   ref.current = state;
+
   return [state, setState, ref] as const;
 }
 
@@ -16,10 +22,10 @@ export function useLocalStorageState<T>(
   const [state, setState, ref] = useRefState<T>(() => {
     const value = localStorage.getItem(key);
     if (value) {
-      return normalizeState(parseJSON(value));
+      return parseJSON(value);
     }
     return defaultValue;
-  });
+  }, normalizeState);
 
   React.useEffect(() => {
     const onStorage = (e: StorageEvent) => {

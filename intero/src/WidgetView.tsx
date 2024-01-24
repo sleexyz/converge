@@ -5,6 +5,7 @@ import { listen } from "@tauri-apps/api/event";
 import { intervalToDuration, formatDuration } from "date-fns";
 import { ActivityLogContext, ActivityLogProvider } from "./activity";
 import { ToposorterStateContext, ToposorterStateProvider } from "./ToposorterState";
+import { GlassWindow } from "./GlassWindow";
 
 interface MouseMoved {
   x: number;
@@ -67,19 +68,14 @@ function WidgetViewInner() {
 
   return (
     // <XEyes />
-    <div
-      className={["h-screen flex flex-col items-end justify-end", classes].join(
-        " "
-      )}
+    <GlassWindow
+      className={["absolute bottom-0 right-0 flex flex-col items-end justify-end", classes].join(" ")}
     >
-      <div className="rounded-xl bg-black p-2 flex flex-col justify-center items-center">
-        <div className="rounded-xl bg-black p-2 text-2xl">{activity.value}</div>
-        <div className="rounded-xl bg-black p-2">{timeSpentString}</div>
-      </div>
-    </div>
+      <div className="rounded-xl p-2 text-2xl">{activity.value}</div>
+      <div className="rounded-xl p-2">{timeSpentString}</div>
+    </GlassWindow>
   );
 }
-
 
 function useInWindow() {
   const [inWindow, setInWindow] = useState(false);
@@ -105,7 +101,6 @@ function useInWindow() {
       });
     };
   }, []);
-
   return inWindow;
 }
 

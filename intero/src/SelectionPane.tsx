@@ -61,7 +61,6 @@ function SelectionEditor({ tnode, id }: { tnode: TNode; id: Id }) {
         <ReactTextareaAutosize
           value={value || ""}
           onChange={handleValueChange}
-          // onBlur={handleValueBlur}
           placeholder="Untitled"
           ref={titleRef}
           className="text-left box-content text-2xl rounded-md p-2 border-none shadow-none outline-none resize-none"
@@ -71,15 +70,12 @@ function SelectionEditor({ tnode, id }: { tnode: TNode; id: Id }) {
           onChange={handleNotesChange}
           minRows={5}
           placeholder="Notes"
-          className="text-left box-content text-lg rounded-md p-2 m-0 border-0 outline-none resize-none"
+          className="text-gray-500 text-left box-content text-lg rounded-md p-2 m-0 border-0 outline-none resize-none"
         />
       </div>
       <span className="px-2 text-sm py-4 text-gray-500">
         Created {formattedDate}
       </span>
-      <pre>
-        {JSON.stringify(tnode.__maxVec, null, 2)}
-      </pre>
     </>
   );
 }
