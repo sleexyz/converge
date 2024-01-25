@@ -6,6 +6,8 @@ import { Id, TNode } from "./ToposorterState";
 
 export interface HideObj {
   done?: boolean;
+  task?: boolean;
+  goal?: boolean;
 }
 
 export interface Preferences {
@@ -20,33 +22,53 @@ export const PreferencesManagerContext =
 
 export class PreferencesManager {
   constructor(
-    readonly setPreferences: (action: React.SetStateAction<Preferences>) => Promise<void>
+    readonly setPreferences: (
+      action: React.SetStateAction<Preferences>
+    ) => Promise<void>
   ) {}
 
   async setFilter(key: keyof HideObj, value: boolean) {
-    await this.setPreferences(produce(draft => {
+    await this.setPreferences(
+      produce((draft) => {
         draft.hide[key] = value;
-    }));
+      })
+    );
   }
 }
 
-export function applyPreferencesFilter(preferences: Preferences, entries: [Id, TNode][]): [Id, TNode][] {
+export function applyPreferencesFilter(
+  preferences: Preferences,
+  entries: [Id, TNode][]
+): [Id, TNode][] {
   return entries.filter(([, node]) => {
-    if (preferences.hide.done && node.status === 'done') {
+    if (preferences.hide.done && node.status === "done") {
+      return false;
+    }
+    if (preferences.hide.task && (node.type === "task" || node.type == null)) {
+      return false;
+    }
+    if (preferences.hide.goal && node.type === "goal") {
       return false;
     }
     return true;
-  })
+  });
 }
 
-export function PreferencesProvider({ children }: { children?: React.ReactNode }) {
+export function PreferencesProvider({
+  children,
+}: {
+  children?: React.ReactNode;
+}) {
   const [_preferences, _setPreferences] = useLocalStorageState<Preferences>(
     "preferences",
     {
       hide: {},
     }
   );
-  const [preferences, setPreferences] = useMakeStateAsync([_preferences, _setPreferences]);
+  const [preferences, setPreferences] = useMakeStateAsync([
+    _preferences,
+    _setPreferences,
+  ]);
 
   const preferencesManager = useMemo(
     () => new PreferencesManager(setPreferences),
