@@ -14,13 +14,18 @@ const SelectedNodeContext = createContext<
   [TNodeRow|null, (id: Id | null) => Promise<void>] | null
 >(null);
 
+export class SelectionManager {
+  constructor(readonly setSelectedNode: (id: Id | null) => Promise<void>, readonly setRelevantNodes: (nodes: Set<Id> | null) => void) {
+  }
+}
+
 export function SelectionProvider({ children }: { children: React.ReactNode }) {
   const toposorterStateManager = useContext(ToposorterStateManagerContext)!;
 
   const [selectedNode, _setSelectedNode, selectedNodeRef] =
     useRefState<TNodeRow | null>(() => null);
 
-  const [relevantNodes, _setRelevantNodes] =
+  const [relevantNodes, setRelevantNodes] =
     useState<Set<Id> | null>(() => null);
 
   const store = useStoreApi();
@@ -42,7 +47,6 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
         id,
       };
       _setSelectedNode(row);
-      _setRelevantNodes(toposorterStateManager.state().getRelevantNodesForSelection(id));
 
       // console.log("selected node", row);
       const { addSelectedNodes } = store.getState();
@@ -68,16 +72,24 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
     ];
   }, [selectedNode, setSelectedNode]);
 
+  const selectionManager = useMemo(() => {
+    return new SelectionManager(setSelectedNode, setRelevantNodes)
+  }, [setSelectedNode, setRelevantNodes]);
+
   return (
     <SelectedNodeContext.Provider value={ret}>
       <SelectedNodeRefContext.Provider value={selectedNodeRef}>
         <RelevantNodesContext.Provider value={relevantNodes}>
-          {children}
+          <SelectionManagerContext.Provider value={selectionManager}>
+            {children}
+          </SelectionManagerContext.Provider>
         </RelevantNodesContext.Provider>
       </SelectedNodeRefContext.Provider>
     </SelectedNodeContext.Provider>
   );
 }
+
+export const SelectionManagerContext = createContext<SelectionManager | null>(null);
 
 export const SelectedNodeRefContext =
   createContext<React.MutableRefObject<TNodeRow | null> | null>(null);
@@ -90,5 +102,8 @@ export function useSelectedNode() {
 
 export function useIsRelevantNode(id: Id): null | boolean {
   const relevantNodes = useContext(RelevantNodesContext)!;
+  if (relevantNodes === null) {
+    return null;
+  }
   return relevantNodes?.has(id);
 }

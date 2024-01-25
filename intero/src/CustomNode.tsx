@@ -1,9 +1,9 @@
 import { useContext } from "react";
 import { UIStateContext } from "./ui_state";
 import { Handle, Position } from "reactflow";
-import { TNode } from "./ToposorterState";
+import { TNode, ToposorterStateManagerContext } from "./ToposorterState";
 import CustomNodeStyles from "./custom_node.module.css";
-import { useIsRelevantNode } from "./Selection";
+import { SelectionManagerContext, useIsRelevantNode } from "./Selection";
 
 export function CustomNode(props: {
   data: TNode;
@@ -34,8 +34,11 @@ export function CustomNode(props: {
 
   const uiState = useContext(UIStateContext)!;
 
+  const toposorterStateManager = useContext(ToposorterStateManagerContext)!;
+  const selectionManager = useContext(SelectionManagerContext)!;
+
   function handleOnClick() {
-    uiState.rotateFocus(props.id);
+    uiState.rotateFocus(props.id, selectionManager, toposorterStateManager);
   }
 
   let title = props.data.value;

@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Id } from "./ToposorterState";
+import { Id, ToposorterStateManager } from "./ToposorterState";
+import { SelectionManager } from "./Selection";
 
 export class UIState {
 
@@ -20,12 +21,17 @@ export class UIState {
     };
 
     lastFocus: {id: Id, index: number} | null = null;
-    rotateFocus = (id: Id) => {
+
+    rotateFocus = (id: Id, selectionManager: SelectionManager, toposorterStateManager: ToposorterStateManager) => {
         let lastFocusIndex = this.lastFocus?.id === id ? this.lastFocus.index : -1;
         const fns = [
-            () => { },
+            () => { 
+                this.focusTitle();
+                selectionManager.setRelevantNodes(null);
+            },
             () => {
                 this.focusTitle();
+                selectionManager.setRelevantNodes(toposorterStateManager.state().getRelevantNodesForSelection(id));
             },
         ];
         let focusIndex = (lastFocusIndex + 1) % fns.length;
