@@ -10,11 +10,8 @@ import * as dagre from "@dagrejs/dagre";
 import * as React from "react";
 import {
   Id,
-  Status,
   TNode,
   TNodeRow,
-  Toposorter,
-  compareNodes,
   compareVecs,
   useToposorterState,
 } from "./ToposorterState";

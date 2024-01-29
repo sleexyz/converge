@@ -5,7 +5,6 @@ import { Canvas } from "./Canvas";
 import {
   ToposorterStateProvider,
   useError,
-  useToposorterState,
 } from "./ToposorterState";
 import { ReactFlowProvider } from "reactflow";
 import { SelectionProvider } from "./Selection";
@@ -13,26 +12,31 @@ import { ActivityLogProvider, useSyncActivityState } from "./activity";
 import { CanvasController } from "./canvas_controller";
 import { ActionManagerProvider } from "./action_manager";
 import { PreferencesProvider } from "./preference_state";
+import { CozoDbProvider } from "./cozo";
 
 function App() {
-  useGlobalShortcut();
+  if (window.__TAURI__) {
+    useGlobalShortcut();
+  }
 
   return (
     <ErrorBoundary>
       <ReactFlowProvider>
-        <ToposorterStateProvider>
-          <ActivityLogProvider>
-            <SelectionProvider>
-              <PreferencesProvider>
-                <CanvasController>
-                  <ActionManagerProvider>
-                    <ToposorterView />
-                  </ActionManagerProvider>
-                </CanvasController>
-              </PreferencesProvider>
-            </SelectionProvider>
-          </ActivityLogProvider>
-        </ToposorterStateProvider>
+        <CozoDbProvider>
+          <ToposorterStateProvider>
+            <ActivityLogProvider>
+              <SelectionProvider>
+                <PreferencesProvider>
+                  <CanvasController>
+                    <ActionManagerProvider>
+                      <ToposorterView />
+                    </ActionManagerProvider>
+                  </CanvasController>
+                </PreferencesProvider>
+              </SelectionProvider>
+            </ActivityLogProvider>
+          </ToposorterStateProvider>
+        </CozoDbProvider>
       </ReactFlowProvider>
     </ErrorBoundary>
   );

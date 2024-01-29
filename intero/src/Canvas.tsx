@@ -1,12 +1,10 @@
 import { ToposorterStateManagerContext } from "./ToposorterState";
 import ReactFlow, {
-  Background,
   Controls,
   applyNodeChanges,
   applyEdgeChanges,
   OnNodesChange,
   OnEdgesChange,
-  BackgroundVariant,
   useNodesInitialized,
   Panel,
 } from "reactflow";

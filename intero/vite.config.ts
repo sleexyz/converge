@@ -1,10 +1,11 @@
+// NOTE: run `bunx tsc vite.config.ts` to update.
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
   plugins: [react()],
-
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent vite from obscuring rust errors
@@ -13,5 +14,8 @@ export default defineConfig(async () => ({
   server: {
     port: 1420,
     strictPort: true,
+  },
+  optimizeDeps: {
+    exclude: ["cozo-lib-wasm"]
   }
 }));
