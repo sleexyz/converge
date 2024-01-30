@@ -13,7 +13,16 @@
 .active {
 }
 
-.node.selected {
+.problem {
+    background: black;
+    color: white;
+}
+
+.problem.selected {
+    @apply text-pink-300;
+}
+
+.node.selected:not(.problem) {
     @apply text-pink-500;
 }
 

@@ -5,7 +5,7 @@ import { useLocalStorageState, useMakeStateAsync } from "./state";
 
 export type Id = string;
 
-export type TNodeType = "task" | "goal" | "project";
+export type TNodeType = "task" | "goal" | "project" | "problem";
 
 export type Status = "active" | "done" | undefined;
 
@@ -315,7 +315,7 @@ export class ToposorterStateManager {
 
   setType = this.bindAction((id: Id, type: string) => {
     return produce((draft: Draft<ToposorterStateData>) => {
-      if (type !== "task" && type !== "goal" && type !== "project") {
+      if (type !== "task" && type !== "goal" && type !== "project" && type !== 'problem') {
         throw new Error(`Invalid type ${type}.`);
       }
       draft.nodes[id].type = type;

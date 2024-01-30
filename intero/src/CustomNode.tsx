@@ -56,6 +56,10 @@ export function CustomNode(props: {
     classes += ` ${CustomNodeStyles.goal}`;
   }
 
+  if (props.data.type === "problem") {
+    classes += ` ${CustomNodeStyles.problem}`;
+  }
+
   if (props.data.type === "task" || props.data.type == null) {
     classes += ` ${CustomNodeStyles.task}`;
   }

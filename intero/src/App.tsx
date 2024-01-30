@@ -15,7 +15,9 @@ import { ActionManagerProvider } from "./action_manager";
 import { PreferencesProvider } from "./preference_state";
 
 function App() {
-  useGlobalShortcut();
+  if (window.__TAURI__) {
+    useGlobalShortcut();
+  }
 
   return (
     <ErrorBoundary>

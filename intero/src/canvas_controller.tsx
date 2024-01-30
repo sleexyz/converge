@@ -330,8 +330,8 @@ const getLayoutedElements = (
   g.setGraph({
     rankdir: "LR",
     align: "UL",
-    // ranker: "tight-tree",
-    ranker: "longest-path",
+    ranker: "tight-tree",
+    // ranker: "longest-path",
     ranksep: 12,
     edgesep: 0,
     nodesep: 0,
