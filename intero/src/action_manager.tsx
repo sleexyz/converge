@@ -41,6 +41,14 @@ export class ActionManager {
     await this.canvasManager.layoutNodesAndCenterSelected();
   }
 
+  async setPinned(id: Id, value: boolean) {
+    await this.stateManager.setPinned(id, value);
+    await this.canvasManager.waitForPropagation();
+
+    await this.setSelectedNode(id);
+    await this.canvasManager.layoutNodesAndCenterSelected();
+  }
+
   async setType(id: Id, type: string) {
     await this.stateManager.setType(id, type);
     await this.canvasManager.waitForPropagation();

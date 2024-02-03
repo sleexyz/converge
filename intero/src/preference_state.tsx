@@ -2,12 +2,15 @@ import { useMemo } from "react";
 import { useLocalStorageState, useMakeStateAsync } from "./state";
 import { produce } from "immer";
 import * as React from "react";
-import { Id, TNode } from "./ToposorterState";
+import { Id, TNode, getPriority, priorityToPoints } from "./ToposorterState";
 
 export interface HideObj {
   done?: boolean;
   task?: boolean;
   goal?: boolean;
+  // minimum priority to hide
+  // e.g. 3 means hide everything with priority 3 or higher
+  minPriority?: number;
 }
 
 export interface Preferences {
@@ -27,7 +30,7 @@ export class PreferencesManager {
     ) => Promise<void>
   ) {}
 
-  async setFilter(key: keyof HideObj, value: boolean) {
+  async setFilter<K extends keyof HideObj>(key: K, value: HideObj[K] | undefined) {
     await this.setPreferences(
       produce((draft) => {
         draft.hide[key] = value;
@@ -41,6 +44,16 @@ export function applyPreferencesFilter(
   entries: [Id, TNode][]
 ): [Id, TNode][] {
   return entries.filter(([, node]) => {
+    return shouldShowNode(preferences, node);
+  });
+}
+
+function shouldShowNode(preferences: Preferences, node: TNode): boolean {
+    // NOTE: only return false in these conditionals
+    // to allow cascading.
+    if (preferences.hide.minPriority && getPriority(node.priority) >= preferences.hide.minPriority) {
+      return false;
+    }
     if (preferences.hide.done && node.status === "done") {
       return false;
     }
@@ -51,7 +64,6 @@ export function applyPreferencesFilter(
       return false;
     }
     return true;
-  });
 }
 
 export function PreferencesProvider({

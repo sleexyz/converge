@@ -16,6 +16,7 @@ export interface TNodeData {
   type?: TNodeType;
   priority?: number;
   notes?: string;
+  pinned?: boolean;
 
   /**  @deprecated **/
   children: Id[];
@@ -31,6 +32,9 @@ export class TNode {
   }
   parents() {
     return this.data.__parents ?? [];
+  }
+  get pinned() {
+    return this.data.pinned;
   }
   get createdAt() {
     return this.data.createdAt;
@@ -141,11 +145,13 @@ export function compareVecs(vecA: number[], vecB: number[]): number {
  */
 function makeScoreVector(node: TNode): number[] {
   return [
+    node.pinned === true ? 1 : 0,
     statusToPoints(node.status),
     priorityToPoints(node.priority),
     node.createdAt.getTime(),
   ];
 }
+
 
 export function statusToPoints(status: Status): number {
   switch (status) {
@@ -158,8 +164,12 @@ export function statusToPoints(status: Status): number {
   }
 }
 
+export function getPriority(priority: number | undefined): number {
+  return priority ?? 3;
+}
+
 export function priorityToPoints(priority: number | undefined): number {
-  return -1 * (priority ?? 3);
+  return -1 * getPriority(priority);
 }
 
 export const SetErrorContext = React.createContext<
@@ -427,6 +437,12 @@ export class ToposorterStateManager {
         );
       }
       draft.nodes[id].status = status as "active" | "done";
+    });
+  });
+
+  setPinned = this.bindAction((id: Id, value: boolean) => {
+    return produce((draft: Draft<ToposorterStateData>) => {
+      draft.nodes[id].pinned = value;
     });
   });
 

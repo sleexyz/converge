@@ -185,6 +185,24 @@ const commands = Object.fromEntries(
       },
     }),
     new Command({
+      command: "pin",
+      argsShape: {
+        subject: ArgType.Id,
+      },
+      runCommand(args, { actionManager }) {
+        actionManager.setPinned(args.subject, true);
+      },
+    }),
+    new Command({
+      command: "unpin",
+      argsShape: {
+        subject: ArgType.Id,
+      },
+      runCommand(args, { actionManager }) {
+        actionManager.setPinned(args.subject, false);
+      },
+    }),
+    new Command({
       command: "type",
       argsShape: {
         subject: ArgType.Id,
@@ -200,7 +218,11 @@ const commands = Object.fromEntries(
         object: ArgType.string,
       },
       async runCommand(args, { preferencesManager, canvasManager }) {
-        await preferencesManager.setFilter(args.object as keyof HideObj, true);
+        if (args.object === "p4") {
+          await preferencesManager.setFilter("minPriority", 4);
+        } else {
+          await preferencesManager.setFilter(args.object as keyof HideObj, true);
+        }
         canvasManager.layoutNodes();
       },
     }),
@@ -210,7 +232,11 @@ const commands = Object.fromEntries(
         object: ArgType.string,
       },
       async runCommand(args, { preferencesManager, canvasManager }) {
-        await preferencesManager.setFilter(args.object as keyof HideObj, false);
+        if (args.object === "p4") {
+          await preferencesManager.setFilter("minPriority", undefined);
+        } else {
+          await preferencesManager.setFilter(args.object as keyof HideObj, false);
+        }
         canvasManager.layoutNodes();
       },
     }),

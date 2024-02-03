@@ -72,6 +72,17 @@ export function CustomNode(props: {
     }
   }
 
+  let chipItem: React.ReactNode = null;
+  if  (props.data.status === "active") {
+    chipItem = (
+      <ActiveSvg />
+    );
+  } else if (props.data.pinned) {
+    chipItem = (
+      <PinnedSvg/>
+    );
+  }
+
   return (
     <>
       <Handle type="target" position={Position.Left} className={CustomNodeStyles.handle}/>
@@ -80,9 +91,9 @@ export function CustomNode(props: {
         onClick={handleOnClick}
       >
         {title}
-        {props.data.status === "active" && (
+        {chipItem && (
           <Chip className="top-[-10px] right-[-10px] bg-gray-500 text-white" >
-            <ActiveSvg />
+            {chipItem}
           </Chip>
         )}
         <div className="absolute top-[-10px] left-4 text-gray-300 text-xl">
@@ -118,5 +129,11 @@ function ActiveSvg() {
         d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
       />
     </svg>
+  );
+}
+
+function PinnedSvg() {
+  return (
+    <div>📌</div>
   );
 }
