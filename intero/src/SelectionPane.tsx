@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
-import { Id, ToposorterStateManagerContext, TNode } from "./ToposorterState";
+import { Id, ToposorterStateManagerContext, TNodeData } from "./ToposorterState";
 import ReactTextareaAutosize from "react-textarea-autosize";
 import { formatDistanceToNow } from "date-fns";
 import { useSelectedNode } from "./Selection";
@@ -7,7 +7,7 @@ import { UIStateContext } from "./ui_state";
 
 export function SelectionPane() {
   const [selectedNode] = useSelectedNode();
-  const tnode = selectedNode?.data as TNode | undefined;
+  const tnode = selectedNode?.data as TNodeData | undefined;
 
   return (
     <div className="h-max-[80vmin] flex flex-col mt-2 w-80 items-stretch justify-stretch shadow-xl rounded-2xl bg-white bg-opacity-75 border border-gray-300 p-2 space-y-2">
@@ -18,7 +18,7 @@ export function SelectionPane() {
   );
 }
 
-function SelectionEditor({ tnode, id }: { tnode: TNode; id: Id }) {
+function SelectionEditor({ tnode, id }: { tnode: TNodeData; id: Id }) {
   const stateManager = useContext(ToposorterStateManagerContext)!;
   const [value, setValue] = useState<string | null>(() => null);
   const [notes, setNotes] = useState<string | null>(() => null);

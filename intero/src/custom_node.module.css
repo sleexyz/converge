@@ -10,9 +10,6 @@
     @apply text-gray-500 bg-gray-200;
 }
 
-.active {
-}
-
 .problem {
     background: black;
     color: white;
@@ -32,8 +29,6 @@
 }
 .goal {
     @apply py-8;
-}
-.task {
 }
 
 .edge path {

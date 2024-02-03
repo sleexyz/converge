@@ -5,7 +5,6 @@ import { Canvas } from "./Canvas";
 import {
   ToposorterStateProvider,
   useError,
-  useToposorterState,
 } from "./ToposorterState";
 import { ReactFlowProvider } from "reactflow";
 import { SelectionProvider } from "./Selection";

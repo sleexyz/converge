@@ -15,6 +15,7 @@
     "@pixi/filter-crt": "^5.1.1",
     "@pixi/react": "^7.1.1",
     "@tauri-apps/api": "^1.5.1",
+    "@types/dagre": "^0.7.52",
     "@types/uuid": "^9.0.7",
     "@xenova/transformers": "^2.11.0",
     "autoprefixer": "^10.4.16",

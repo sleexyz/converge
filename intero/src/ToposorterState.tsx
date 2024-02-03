@@ -9,28 +9,77 @@ export type TNodeType = "task" | "goal" | "project" | "problem";
 
 export type Status = "active" | "done" | undefined;
 
-export interface TNode {
+export interface TNodeData {
   value: string;
   createdAt: Date;
   status?: Status;
   type?: TNodeType;
   priority?: number;
   notes?: string;
+
+  /**  @deprecated **/
   children: Id[];
+
   __maxVec?: number[];
   __parents?: Id[];
 }
 
+export class TNode {
+  constructor(readonly id: Id, readonly data: TNodeData) {}
+  children() {
+    return this.data.children;
+  }
+  parents() {
+    return this.data.__parents ?? [];
+  }
+  get createdAt() {
+    return this.data.createdAt;
+  }
+  get notes() {
+    return this.data.notes;
+  }
+  get priority() {
+    return this.data.priority;
+  }
+  get value() {
+    return this.data.value;
+  }
+  get status() {
+    return this.data.status;
+  }
+  get type() {
+    return this.data.type;
+  }
+  maxVec() {
+    return this.data.__maxVec;
+  }
+}
+
+export interface RelationContext {
+  depends: {parent: Id, child: Id}[]
+}
+
+export interface ToposorterStateData {
+  nodes: Record<Id, TNodeData>;
+  relations?: RelationContext;
+}
+
+
+export interface NodeContext {
+  nodes(): Record<Id, TNodeData>;
+  getChildren(node: Id): Id[];
+}
+
 export class Toposorter {
   visited = new Set<Id>();
-  nodes: Record<Id, TNode> = {};
+  readonly data: Record<Id, TNodeData>;
 
-  private constructor(entries: [key: Id, value: TNode][]) {
-    this.nodes = Object.fromEntries(entries);
+  private constructor(entries: [key: Id, value: TNodeData][]) {
+    this.data = Object.fromEntries(entries);
   }
 
   // Returns topologically sorted nodes.
-  static sort(entries: [key: Id, value: TNode][]): [key: Id, value: TNode][] {
+  static sort(entries: [key: Id, value: TNodeData][]): [key: Id, value: TNode][] {
     return new Toposorter(entries).sort();
   }
 
@@ -38,31 +87,35 @@ export class Toposorter {
   // Visit all of a node's children recursively before visiting a node.
   // Then insertion order should be topologically sorted.
   sort(): [key: Id, value: TNode][] {
-    for (let key of Object.keys(this.nodes)) {
-      this.visitChildren(key);
+    const nodes: Record<Id, TNode> = {};
+
+    for (let key of Object.keys(this.data)) {
+      this.visitChildren(key, nodes);
     }
-    return [...this.visited].map((x) => [x, this.nodes[x]]);
+
+    return [...this.visited].map((x) => [x, nodes[x]]);
   }
 
   // DFS
-  private visitChildren(key: Id) {
+  private visitChildren(key: Id, nodes: Record<Id, TNode>) {
     const visted = this.visited.has(key);
     if (visted) {
       return;
     }
 
-    const node = this.nodes[key];
-    if (!node) {
+    const data = this.data[key];
+    if (!data) {
       return;
     }
 
+    const node = new TNode(key, {...data});
     let maxVec = makeScoreVector(node);
-    for (let childId of node.children) {
-      this.visitChildren(childId);
-      maxVec = chooseMaxVec(maxVec, this.nodes[childId].__maxVec!);
-      this.nodes[childId].__parents?.push(key);
+    for (let childId of node.children()) {
+      this.visitChildren(childId, nodes);
+      maxVec = chooseMaxVec(maxVec, nodes[childId].maxVec()!);
+      nodes[childId].parents().push(key);
     }
-    this.nodes[key] = { ...this.nodes[key], __maxVec: maxVec, __parents: [] };
+    nodes[key] = new TNode(key, {...this.data[key], __maxVec: maxVec, __parents: [] });
     this.visited.add(key);
   }
 }
@@ -109,10 +162,6 @@ export function priorityToPoints(priority: number | undefined): number {
   return -1 * (priority ?? 3);
 }
 
-export interface ToposorterStateData {
-  nodes: Record<Id, TNode>;
-}
-
 export const SetErrorContext = React.createContext<
   ((error: Error | null) => void) | null
 >(null);
@@ -123,20 +172,26 @@ export type TNodeRow = {
 };
 
 export class ToposorterState {
-  constructor(readonly state: ToposorterStateData) {}
+  nodes: Record<Id, TNode>;
 
-  getNode(id: Id): TNode {
-    return this.state.nodes[id];
+  constructor(state: ToposorterStateData) {
+    let entries = Toposorter.sort(Object.entries(state.nodes));
+    entries = orderNodes(entries);
+    this.nodes = Object.fromEntries(entries);
+  }
+
+  getNode(id: Id): TNode{
+    return this.nodes[id];
   }
 
   getNodes(): Record<Id, TNode> {
-    return this.state.nodes;
+    return this.nodes;
   }
 
   getActiveNode(): TNodeRow | null {
-    for (let id of Object.keys(this.state.nodes)) {
-      if (this.state.nodes[id].status === "active") {
-        return { id, data: this.state.nodes[id] };
+    for (let id of Object.keys(this.nodes)) {
+      if (this.nodes[id].status === "active") {
+        return { id, data: this.nodes[id] };
       }
     }
     return null;
@@ -149,10 +204,8 @@ export class ToposorterState {
       return relevant;
     }
     this.collectDescendants(id, relevant);
-    // Hack, but works:
     relevant.delete(id);
     this.collectAncestors(id, relevant);
-    // console.log(relevant);
     return relevant
   }
 
@@ -166,8 +219,7 @@ export class ToposorterState {
       return;
     }
     set.add(id);
-    console.log(node.__parents);
-    for (const parent of node.__parents ?? []) {
+    for (const parent of node.parents()) {
       this.collectAncestors(parent, set);
     }
   }
@@ -181,14 +233,14 @@ export class ToposorterState {
       return;
     }
     set.add(id);
-    for (const child of node.children) {
+    for (const child of node.children()) {
       this.collectDescendants(child, set);
     }
   }
 
   reconcileId(idPrefix: string): TNodeRow {
     let retId = undefined;
-    for (let id of Object.keys(this.state.nodes)) {
+    for (let id of Object.keys(this.nodes)) {
       if (id.startsWith(idPrefix)) {
         if (retId) {
           throw new Error(`Multiple ids match prefix ${idPrefix}`);
@@ -199,19 +251,84 @@ export class ToposorterState {
     if (!retId) {
       throw new Error(`Could not find node with prefix ${idPrefix}`);
     }
-    return { id: retId, data: this.state.nodes[retId] };
+    return { id: retId, data: this.nodes[retId] };
   }
 }
 
+// Ranks nodes and rearranges children ordering
+// TODO: move ordering earlier
+function orderNodes(entries: [string, TNode][]): [string, TNode][] {
+  // rank nodes
+  let out = [...entries];
+  // out = Toposorter.sort(entries);
+  // let out = entries;
+  out = out.sort(([_keyA, a], [_keyB, b]) => {
+    return compareVecs(a.maxVec()!, b.maxVec()!);
+  });
+
+  // Re-order edges in place
+  const nodeIndicies = new Map<string, number>();
+  for (let [i, [id]] of out.entries()) {
+    nodeIndicies.set(id, i);
+  }
+
+  const newOut: [string, TNode][] = [];
+
+  for (let [i, node] of out) {
+    const newNode = node;
+    // TODO: move this logic to Toposorter
+
+    // const newNode = { ...node };
+    // newNode.children = [...node.children]
+    //   .filter((child) => nodeIndicies.has(child))
+    //   .sort((a, b) => {
+    //     const aIndex = nodeIndicies.get(a)!;
+    //     const bIndex = nodeIndicies.get(b)!;
+    //     return aIndex - bIndex;
+    //   });
+    newOut.push([i, newNode]);
+  }
+
+  return newOut;
+}
+
+export function orderEdges(entries: [Id, TNode][]): [parent: Id, child: Id][] {
+  const edges: [Id, Id][] = [];
+  let nodeIndicies = new Map<string, number>();
+
+  for (let i = 0; i < entries.length; i++) {
+    const [id] = entries[i];
+    nodeIndicies.set(id, i);
+  }
+
+  for (let [i, node] of entries) {
+    // TODO: move this logic to Toposorter
+
+    const orderedChildren = [...node.children()]
+      .filter((child) => nodeIndicies.has(child))
+      .sort((a, b) => {
+        const aIndex = nodeIndicies.get(a)!;
+        const bIndex = nodeIndicies.get(b)!;
+        return aIndex - bIndex;
+      });
+    for (let child of orderedChildren) {
+      edges.push([i, child]);
+    }
+  }
+
+  return edges;
+}
+
+
 function withNormalization(fn: (state: ToposorterStateData) => ToposorterStateData): (state: ToposorterStateData) => ToposorterStateData {
   return (state: ToposorterStateData) => {
-    const input = fn(state);
-    const entries = Object.entries(state.nodes);
-    const sortedEntries = Toposorter.sort(entries);
-    const out = {
-      ...input,
-      nodes: Object.fromEntries(sortedEntries)
-    };
+    const out = fn(state);
+    // const entries = Object.entries(state.nodes);
+    // const sortedEntries = Toposorter.sort(entries);
+    // const out = {
+    //   ...input,
+    //   nodes: Object.fromEntries(sortedEntries)
+    // };
     return out;
   };
 }
@@ -275,7 +392,7 @@ export class ToposorterStateManager {
         if (key === id) {
           continue;
         }
-        const newChildren = nodes[key].children.filter(
+        const newChildren = nodes[key].children().filter(
           (childId) => childId !== id
         );
         draft.nodes[key].children = newChildren;

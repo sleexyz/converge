@@ -10,12 +10,10 @@ import * as dagre from "@dagrejs/dagre";
 import * as React from "react";
 import {
   Id,
-  Status,
   TNode,
   TNodeRow,
-  Toposorter,
-  compareNodes,
   compareVecs,
+  orderEdges,
   useToposorterState,
 } from "./ToposorterState";
 import { SelectedNodeRefContext, useSelectedNode } from "./Selection";
@@ -110,26 +108,27 @@ export function CanvasController(props: { children: React.ReactNode }) {
     const initialEdges = [];
     let entries = Object.entries(tNodes);
     entries = applyPreferencesFilter(preferences, entries);
-    entries = orderNodes(entries);
+    const orderedEdges = orderEdges(entries);
 
     for (const [id, node] of entries) {
       initialNodes.push({
         id,
         type: "custom",
-        data: { ...node, id },
+        data: node,
         position: { x: 0, y: 0 },
       });
-      initialEdges.push(
-        ...node.children.map((child) => ({
-          id: `${id}--${child}`,
-          source: id,
-          target: child,
-          // type: "smoothstep",
-          type: "bezier",
-          className: CustomNodeStyles.edge,
-        }))
-      );
     }
+    for (const [parentId, childId] of orderedEdges) {
+      initialEdges.push({
+        id: `${parentId}--${childId}`,
+        source: parentId,
+        target: childId,
+        // type: "smoothstep",
+        type: "bezier",
+        className: CustomNodeStyles.edge,
+      });
+    }
+    console.log("initialNodes", initialNodes);
     return [initialNodes, initialEdges];
   }, [tNodes, preferences]);
 
@@ -280,39 +279,6 @@ function useSelectActiveOnMount(canvasManager: CanvasManager, synced: boolean) {
       hasRunRef.current = true;
     })();
   }, [synced]);
-}
-
-// Ranks nodes and rearranges children ordering
-function orderNodes(entries: [string, TNode][]): [string, TNode][] {
-  // rank nodes
-  let out = [...entries];
-  // out = Toposorter.sort(entries);
-  // let out = entries;
-  out = out.sort(([_keyA, a], [_keyB, b]) => {
-    return compareVecs(a.__maxVec!, b.__maxVec!);
-  });
-
-  // Re-order edges in place
-  const nodeIndicies = new Map<string, number>();
-  for (let [i, [id]] of out.entries()) {
-    nodeIndicies.set(id, i);
-  }
-
-  const newOut: [string, TNode][] = [];
-
-  for (let [i, node] of out) {
-    const newNode = { ...node };
-    newNode.children = [...node.children]
-      .filter((child) => nodeIndicies.has(child))
-      .sort((a, b) => {
-        const aIndex = nodeIndicies.get(a)!;
-        const bIndex = nodeIndicies.get(b)!;
-        return aIndex - bIndex;
-      });
-    newOut.push([i, newNode]);
-  }
-
-  return newOut;
 }
 
 const getLayoutedElements = (
