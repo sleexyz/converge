@@ -43,9 +43,43 @@ export function applyPreferencesFilter(
   preferences: Preferences,
   entries: [Id, TNode][]
 ): [Id, TNode][] {
-  return entries.filter(([, node]) => {
-    return shouldShowNode(preferences, node);
-  });
+
+  // return entries.filter(([, node]) => {
+  //   return shouldShowNode(preferences, node);
+  // });
+  console.log(preferences);
+  // memoize.
+  let hidden = new Set();
+
+  const filteredNodes: [Id, TNode][] = [];
+  for (const [id, node] of entries) {
+    if (!shouldShowNode(preferences, node)) {
+      addHidden(id);
+    } else if (node.parents().length > 0){
+      // Hide if all parent are hidden
+      let allParentsHidden = true;
+      for (const parentId of node.parents()) {
+        if (!hidden.has(parentId)) {
+          allParentsHidden = false;
+          break;
+        }
+      }
+      if (allParentsHidden) {
+        addHidden(id);
+      }
+    }
+
+    if (!hidden.has(id)) {
+      filteredNodes.push([id, node]);
+    } 
+  }
+  function addHidden(id: Id) {
+    if (id === "6715a1d3-adbe-4c2e-8b72-e08d030b0f89") {
+      console.log("adding hidden for", id);
+    }
+    hidden.add(id);
+  }
+  return filteredNodes;
 }
 
 function shouldShowNode(preferences: Preferences, node: TNode): boolean {

@@ -97,7 +97,7 @@ export class Toposorter {
       this.visitChildren(key, nodes);
     }
 
-    return [...this.visited].map((x) => [x, nodes[x]]);
+    return [...this.visited].reverse().map((x) => [x, nodes[x]]);
   }
 
   // DFS
@@ -186,6 +186,7 @@ export class ToposorterState {
 
   constructor(state: ToposorterStateData) {
     let entries = Toposorter.sort(Object.entries(state.nodes));
+    console.log(entries);
     entries = orderNodes(entries);
     this.nodes = Object.fromEntries(entries);
   }
