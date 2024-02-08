@@ -1,5 +1,5 @@
 // Panel
-use crate::panel_ext::init_as_panel;
+use crate::{main_window::position_window_fullscreen, panel_ext::init_as_panel};
 use crate::main_window::position_window;
 use tauri::{AppHandle, Manager, Wry};
 use tauri_nspanel::ManagerExt;
@@ -45,13 +45,14 @@ pub fn open_widget_window(app: &AppHandle) {
         // }
         let _ = window.set_ignore_cursor_events(true);
         // let _ = window.show().ok();
-        position_window(&window, |display_pos, display_size, win_frame_size| {
-            NSPoint {
-                x: (display_pos.x + (display_size.width)) - (win_frame_size.width),
-                // y: (display_pos.y + (display_size.height)) - (win_frame_size.height), // 160 from the top
-                y: display_pos.y
-            }
-        });
+        position_window_fullscreen(&window, 1.0);
+        // position_window(&window, |display_pos, display_size, win_frame_size| {
+        //     NSPoint {
+        //         x: (display_pos.x + (display_size.width)) - (win_frame_size.width),
+        //         // y: (display_pos.y + (display_size.height)) - (win_frame_size.height), // 160 from the top
+        //         y: display_pos.y
+        //     }
+        // });
         init_as_panel(window);
         open_panel(app);
     }

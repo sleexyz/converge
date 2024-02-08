@@ -1,10 +1,13 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import "./WidgetView.css";
 // import { XEyes } from "./XEyes";
 import { listen } from "@tauri-apps/api/event";
 import { intervalToDuration, formatDuration } from "date-fns";
 import { ActivityLogContext, ActivityLogProvider } from "./activity";
-import { ToposorterStateContext, ToposorterStateProvider } from "./ToposorterState";
+import {
+  ToposorterStateContext,
+  ToposorterStateProvider,
+} from "./ToposorterState";
 import { GlassWindow } from "./GlassWindow";
 
 interface MouseMoved {
@@ -16,11 +19,16 @@ interface MouseMoved {
   window_height: number;
 }
 
-function WidgetViewInner() {
+function useActiveActivity() {
   const activityLog = useContext(ActivityLogContext)!;
+  const toposorterState = useContext(ToposorterStateContext)!;
+  const lastRow = activityLog.getActiveActivity();
+  const id = lastRow?.activityId;
+  const activity = id ? toposorterState.getNode(id) : null;
+  return { row: lastRow, activity };
+}
 
-  const inWindow = useInWindow();
-
+function WidgetViewInner() {
   const [_interval, setInterval] = useState<number | null>(null);
   const [_tick, setTick] = useState(0);
 
@@ -42,39 +50,82 @@ function WidgetViewInner() {
     };
   }, []);
 
-  const toposorterState = useContext(ToposorterStateContext)!;
-  const lastRow = activityLog.getActiveActivity();
-  const id = lastRow?.activityId;
-  const activity = id ? toposorterState.getNode(id) : null;
-  if (!id || !activity) {
-    return <></>;
-  }
+  const { row, activity } = useActiveActivity();
 
-  // const timeSpentMillis = start ? ((Date.now() - start.getTime())) : 0;
-  const duration = intervalToDuration({
-    start: lastRow.createdAt,
-    end: new Date(),
-  });
-  const timeSpentString = formatDuration(duration, {
-    format: ["hours", "minutes"],
-  });
+  let innerElement = <></>;
+  const backgroundStyle: React.CSSProperties = {};
 
-  let classes = "transition-opacity duration-150 ease-in-out";
-  if (inWindow) {
-    classes += " opacity-10";
+  const ref = useRef<any>();
+
+  const coords = useMousePosition();
+
+  if (activity && row) {
+    // const timeSpentMillis = start ? ((Date.now() - start.getTime())) : 0;
+    const duration = intervalToDuration({
+      start: row.createdAt,
+      end: new Date(),
+    });
+    const timeSpentString = formatDuration(duration, {
+      format: ["hours", "minutes"],
+    });
+
+    let classes = "transition-opacity duration-150 ease-in-out";
+
+    const rect = ref.current?.getBoundingClientRect();
+
+    let inWindow = false;
+    if (rect) {
+      if (coords.x >= rect.x  && coords.x <= rect.x + rect.width && coords.y >= rect.y && coords.y <= rect.y + rect.height) {
+        inWindow = true;
+      }
+    }
+
+    if (inWindow) {
+      classes += " opacity-10";
+    } else {
+      classes += " opacity-100";
+    }
+
+    innerElement = (
+      <GlassWindow
+        className={[
+          "absolute bottom-0 right-0 flex flex-col items-end justify-end",
+          classes,
+        ].join(" ")}
+        ref={ref}
+      >
+        <div className="rounded-xl p-2 text-2xl">{activity.value}</div>
+        <div className="rounded-xl p-2">{timeSpentString}</div>
+      </GlassWindow>
+    );
   } else {
-    classes += " opacity-100";
+    backgroundStyle.backgroundColor = "rgba(0, 0, 0, 0.5)";
   }
 
   return (
     // <XEyes />
-    <GlassWindow
-      className={["absolute bottom-0 right-0 flex flex-col items-end justify-end", classes].join(" ")}
-    >
-      <div className="rounded-xl p-2 text-2xl">{activity.value}</div>
-      <div className="rounded-xl p-2">{timeSpentString}</div>
-    </GlassWindow>
+    <div className="w-[100vw] h-[100vh]" style={backgroundStyle}>
+      {innerElement}
+    </div>
   );
+}
+
+function useMousePosition() {
+  const [coords, setCoords] = useState({x: 0, y: 0});
+  useEffect(() => {
+    const unlistenPromise = listen("mouse-moved", (event) => {
+      const mouseMoved = event.payload as MouseMoved;
+      const x = mouseMoved.x - mouseMoved.window_x;
+      const y = mouseMoved.window_height - (mouseMoved.y - mouseMoved.window_y);
+      setCoords({x, y});
+    });
+    return () => {
+      unlistenPromise.then((unlisten) => {
+        unlisten();
+      });
+    };
+  }, []);
+  return coords;
 }
 
 function useInWindow() {
