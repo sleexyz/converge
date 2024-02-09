@@ -26,6 +26,7 @@
               bun
               rustToolchain
               rust-analyzer-unwrapped
+              rustup
               # rustInfo.drvs
               libiconv
               (pkgs.darwin.apple_sdk.frameworks.Carbon)

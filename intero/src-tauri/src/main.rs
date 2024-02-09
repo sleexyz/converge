@@ -5,6 +5,8 @@ mod main_window;
 mod window_ext;
 mod panel_ext;
 mod widget;
+mod screenshot;
+
 
 use clippy_app::main_window::position_window_fullscreen;
 use tauri::{AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, Wry};
@@ -54,6 +56,7 @@ fn main() {
             hide_panel,
             close_panel,
             toggle_panel,
+            screenshot,
             widget::show_widget_window,
         ])
         .setup(move |app| {
@@ -72,6 +75,10 @@ fn main() {
         .plugin(tauri_plugin_persisted_scope::init())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+#[tauri::command]
+fn screenshot(app: AppHandle<Wry>) {
+    screenshot::capture(app.config().clone());
 }
 
 #[tauri::command]

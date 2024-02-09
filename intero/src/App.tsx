@@ -12,10 +12,17 @@ import { ActivityLogProvider, useSyncActivityState } from "./activity";
 import { CanvasController } from "./canvas_controller";
 import { ActionManagerProvider } from "./action_manager";
 import { PreferencesProvider } from "./preference_state";
+import { useEffect } from "react";
+import { invoke } from "@tauri-apps/api";
 
 function App() {
   if (window.__TAURI__) {
     useGlobalShortcut();
+    useEffect(() => {
+      (window as any).screenshot = () => {
+        invoke("screenshot")
+      };
+    }, []);
   }
 
   return (
