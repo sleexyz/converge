@@ -1,9 +1,7 @@
 // Panel
 use crate::{main_window::position_window_fullscreen, panel_ext::init_as_panel};
-use crate::main_window::position_window;
 use tauri::{AppHandle, Manager, Wry};
 use tauri_nspanel::ManagerExt;
-use cocoa::foundation::NSPoint;
 
 #[tauri::command]
 pub fn show_widget_window(app: AppHandle) {
