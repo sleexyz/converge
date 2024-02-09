@@ -3,7 +3,7 @@ import { Stage } from '@pixi/react';
 import { Cubism4InternalModel, Live2DModel, clamp } from 'pixi-live2d-display';
 import { useRef, useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
-import { TTSSqueak } from './TTS';
+import { TTSSqueak } from '../TTS';
 // import { CRTFilter } from '@pixi/filter-crt';
 
 interface MouseMoved {

@@ -3,11 +3,11 @@ import "./WidgetView.css";
 // import { XEyes } from "./XEyes";
 import { listen } from "@tauri-apps/api/event";
 import { intervalToDuration, formatDuration } from "date-fns";
-import { ActivityLogContext, ActivityLogProvider } from "./activity";
+import { ActivityLogContext, ActivityLogProvider } from "../activity";
 import {
   ToposorterStateContext,
   ToposorterStateProvider,
-} from "./ToposorterState";
+} from "../ToposorterState";
 import { GlassWindow } from "./GlassWindow";
 
 interface MouseMoved {
