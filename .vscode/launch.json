@@ -1,0 +1,28 @@
+{
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "args": [],
+            "cwd": "${workspaceFolder:converge}/clippy-lib",
+            "name": "Debug clippy-lib (clippy-lib)",
+            "program": "${workspaceFolder:converge}/clippy-lib/.build/debug/clippy-lib",
+            "preLaunchTask": "swift: Build Debug clippy-lib (clippy-lib)"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "args": [],
+            "cwd": "${workspaceFolder:converge}/clippy-lib",
+            "name": "Release clippy-lib (clippy-lib)",
+            "program": "${workspaceFolder:converge}/clippy-lib/.build/release/clippy-lib",
+            "preLaunchTask": "swift: Build Release clippy-lib (clippy-lib)"
+        }
+    ]
+}

@@ -80,18 +80,44 @@ struct ContentView: View {
     var window: NSWindow
     var tracker: CursorTracker
     
+    @State private var isHovered = false
+    @StateObject var screenRecorder = ScreenRecorder()
+
+    
     init(window: NSWindow) {
         self.window = window
         self.tracker = CursorTracker(window: window)
     }
     
     var body: some View {
-        HStack {
-            EyeView(tracker: tracker)
-            EyeView(tracker: tracker)
+        ZStack {
+            // HStack {
+            //     EyeView(tracker: tracker)
+            //     EyeView(tracker: tracker)
+            // }
+            Color.clear
+                .contentShape(Rectangle())
+
+            screenRecorder.capturePreview
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .aspectRatio(screenRecorder.contentSize, contentMode: .fit)
+                .padding(8)
         }
         .onTapGesture {
             print("click")
+        }
+        .onAppear {
+            Task {
+                if await screenRecorder.canRecord {
+                    await screenRecorder.start()
+                } 
+            }
+        }
+        .opacity(isHovered ? 0 : 1) // Change opacity based on hover state
+        .onHover { hover in
+            withAnimation {
+                self.isHovered = hover
+            }
         }
     }
 }
