@@ -76,9 +76,10 @@ fn main() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+
 #[tauri::command]
-fn screenshot(app: AppHandle<Wry>) {
-    screenshot::capture(app.config().clone());
+async fn screenshot(app: AppHandle<Wry>) -> Vec<String> {
+    return screenshot::capture(app.config()).await;
 }
 
 #[tauri::command]

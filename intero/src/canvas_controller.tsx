@@ -123,8 +123,8 @@ export function CanvasController(props: { children: React.ReactNode }) {
         id: `${parentId}--${childId}`,
         source: parentId,
         target: childId,
-        // type: "smoothstep",
-        type: "bezier",
+        type: "smoothstep",
+        // type: "bezier",
         className: CustomNodeStyles.edge,
       });
     }

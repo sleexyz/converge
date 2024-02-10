@@ -16,6 +16,7 @@ import { BaseDirectory, createDir, writeBinaryFile } from "@tauri-apps/api/fs";
 import { appDataDir } from "@tauri-apps/api/path";
 import { SearchContainer, SearchInput } from "./Box";
 import { HideObj, PreferencesManager, PreferencesManagerContext } from "./preference_state";
+import { ScreenWatcher } from "./screen_watcher";
 
 class ArgType<_T> {
   static TNode = new ArgType<TNodeRow>();
@@ -65,6 +66,13 @@ class Command<A extends ArgsShape> {
 
 const commands = Object.fromEntries(
   [
+    new Command({
+      command: "screenshot",
+      argsShape: {},
+      runCommand(_args) {
+        ScreenWatcher.instance.screenshot();
+      },
+    }),
     new Command({
       command: "layout",
       argsShape: {},
