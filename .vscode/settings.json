@@ -24,5 +24,9 @@
     },
     "[rust]": {
         "editor.defaultFormatter": "rust-lang.rust-analyzer"
+    },
+    "nixEnvSelector.nixFile": "${workspaceFolder}/flake.nix",
+    "[swift]": {
+        "editor.defaultFormatter": "vknabel.vscode-swiftformat"
     }
 }

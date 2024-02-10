@@ -7,21 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A0C85A302B226E6A003E351D /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0C85A282B226E6A003E351D /* Item.swift */; };
 		A0C85A312B226E6A003E351D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0C85A292B226E6A003E351D /* Assets.xcassets */; };
 		A0C85A322B226E6A003E351D /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0C85A2B2B226E6A003E351D /* Preview Assets.xcassets */; };
-		A0C85A352B226E6A003E351D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0C85A2F2B226E6A003E351D /* ContentView.swift */; };
-		A0C85A372B22AC50003E351D /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0C85A362B22AC50003E351D /* main.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		A02886972B226A4800966EFC /* clippy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = clippy.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		A0C85A282B226E6A003E351D /* Item.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
 		A0C85A292B226E6A003E351D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A0C85A2B2B226E6A003E351D /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		A0C85A2C2B226E6A003E351D /* clippy.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = clippy.entitlements; sourceTree = "<group>"; };
-		A0C85A2F2B226E6A003E351D /* ContentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		A0C85A362B22AC50003E351D /* main.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		A0E856BC2B774EF600B2B530 /* clippy-lib */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = "clippy-lib"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -38,6 +33,7 @@
 		A028868E2B226A4800966EFC = {
 			isa = PBXGroup;
 			children = (
+				A0E856BC2B774EF600B2B530 /* clippy-lib */,
 				A0C85A272B226E6A003E351D /* clippy */,
 				A02886982B226A4800966EFC /* Products */,
 			);
@@ -54,12 +50,9 @@
 		A0C85A272B226E6A003E351D /* clippy */ = {
 			isa = PBXGroup;
 			children = (
-				A0C85A282B226E6A003E351D /* Item.swift */,
-				A0C85A362B22AC50003E351D /* main.swift */,
 				A0C85A292B226E6A003E351D /* Assets.xcassets */,
 				A0C85A2A2B226E6A003E351D /* Preview Content */,
 				A0C85A2C2B226E6A003E351D /* clippy.entitlements */,
-				A0C85A2F2B226E6A003E351D /* ContentView.swift */,
 			);
 			path = clippy;
 			sourceTree = "<group>";
@@ -116,6 +109,8 @@
 				Base,
 			);
 			mainGroup = A028868E2B226A4800966EFC;
+			packageReferences = (
+			);
 			productRefGroup = A02886982B226A4800966EFC /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -142,9 +137,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A0C85A352B226E6A003E351D /* ContentView.swift in Sources */,
-				A0C85A302B226E6A003E351D /* Item.swift in Sources */,
-				A0C85A372B22AC50003E351D /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
