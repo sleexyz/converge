@@ -1,14 +1,23 @@
 use std::{sync::Arc, time::{SystemTime, UNIX_EPOCH}};
+use cocoa::base;
 use tauri::api::path;
 use xcap::Monitor;
+use base64::prelude::*;
+use image::ImageOutputFormat; // This assumes you're using the `image` crate for image manipulation
+use std::io::Cursor; // Add this import
 
-pub fn capture(config: Arc<tauri::Config>) {
+
+
+
+pub async fn capture(config: Arc<tauri::Config>) -> Vec<String> {
     let start = SystemTime::now();
     let app_cache_dir = path::app_cache_dir(&config)
         .unwrap()
         .to_str()
         .map(|s| s.to_string())
         .unwrap();
+
+    let mut base64_images = Vec::new();
 
     for screen in Monitor::all().unwrap() {
         println!("capturer {screen:?}");
@@ -25,6 +34,15 @@ pub fn capture(config: Arc<tauri::Config>) {
 
         println!("file_path: {:?}", file_path);
         image.save(&file_path).unwrap();
+
+        let mut buf = Vec::new();
+        let mut cursor = Cursor::new(&mut buf);
+        image.write_to(&mut cursor, ImageOutputFormat::Png).unwrap();
+        
+        // Encode the PNG bytes to a base64 string
+        let base64_string = BASE64_STANDARD.encode(buf);
+        base64_images.push(base64_string);
     }
     println!("Done: {:?}", start.elapsed().ok());
+    base64_images
 }
