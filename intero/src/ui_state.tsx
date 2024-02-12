@@ -20,13 +20,23 @@ export class UIState {
         this.titleRef?.current?.focus();
     };
 
+    // TODO: move these to SelectionManager
+
     lastFocus: {id: Id, index: number} | null = null;
 
+    // TODO: bind selection manager and toposorterStateManager to UIState
     rotateFocus = (id: Id, selectionManager: SelectionManager, toposorterStateManager: ToposorterStateManager) => {
-        // if (this.lastFocus && this.lastFocus.id !== id) {
-        //     return this.lastFocus.id;
-        // }
         let lastFocusIndex = this.lastFocus?.id === id ? this.lastFocus.index : (this.lastFocus?.index ?? 0) - 1;
+        let focusIndex = (lastFocusIndex + 1) % 2;
+        this.lastFocus = {id, index: focusIndex};
+        this.updateFocus(selectionManager, toposorterStateManager);
+    }
+
+    public updateFocus = (selectionManager: SelectionManager, toposorterStateManager: ToposorterStateManager) => {
+        if (!this.lastFocus) {
+            return;
+        }
+        const id = this.lastFocus.id;
         const fns = [
             () => { 
                 this.focusTitle();
@@ -36,9 +46,7 @@ export class UIState {
                 selectionManager.setRelevantNodes(toposorterStateManager.state().getRelevantNodesForSelection(id));
             },
         ];
-        let focusIndex = (lastFocusIndex + 1) % fns.length;
-        fns[focusIndex]();
-        this.lastFocus = {id, index: focusIndex};
+        fns[this.lastFocus.index]();
     }
 }
 

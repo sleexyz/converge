@@ -80,7 +80,10 @@ export class ScreenWatcher {
     return responseJson.response;
   }
 
-  private async determineNature(description: string) {
+  private async determineNature(description: string): Promise<{
+    activity: string;
+    reason: string;
+  }> {
     const response = await fetch("http://localhost:11434/api/generate", {
       method: "POST",
       body: JSON.stringify({
@@ -93,7 +96,7 @@ export class ScreenWatcher {
 ${description}.
 Describe the nature of the activity in the screen.  Respond with one of the following:
 - productive
-- unproductive
+- distraction
 - unknown
 Give a reason for your response. Be concise.
 Respond in JSON.
@@ -104,7 +107,7 @@ Respond in JSON.
     });
     const responseJson = await response.json();
     console.log(responseJson);
-    return responseJson.response;
+    return JSON.parse(responseJson.response);
   }
 }
 

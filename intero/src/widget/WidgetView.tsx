@@ -23,20 +23,18 @@ function WidgetViewInner() {
   const [_interval, setInterval] = useState<number | null>(null);
   const [_tick, setTick] = useState(0);
   const [description, setDescription] = useState("");
-  const [nature, setNature] = useState("");
+  const [nature, setNature] = useState<{activity: string, reason: string}|undefined>(undefined);
   const [image, setImage] = useState<string | null>(null);
-  const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
     let cancel = false;
     async function loop() {
       try {
-        const { response, nature, image, timeElapsed } =
+        const { response, nature, image } =
           await ScreenWatcher.instance.start();
         setDescription(response);
         setNature(nature);
         setImage(image);
-        setElapsed(timeElapsed);
       } catch (e) {
         console.error(e);
         await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -72,14 +70,15 @@ function WidgetViewInner() {
   const { row, activity } = useActiveActivity();
 
   let innerElement = <></>;
-  const backgroundStyle: React.CSSProperties = {};
+  const backgroundStyle: React.CSSProperties = {
+    backgroundColor: "rgba(0, 0, 0, 0.0)"
+  };
 
   const ref = useRef<any>();
 
   const inWindow = useInWindow(ref.current);
 
   if (activity && row) {
-    // const timeSpentMillis = start ? ((Date.now() - start.getTime())) : 0;
     const duration = intervalToDuration({
       start: row.createdAt,
       end: new Date(),
@@ -89,6 +88,10 @@ function WidgetViewInner() {
     });
 
     let classes = "transition-opacity duration-150 ease-in-out";
+
+    if (nature?.activity === "distraction") {
+      backgroundStyle.backgroundColor = "rgba(0, 0, 0, 0.5)";
+    }
 
     if (inWindow) {
       classes += " opacity-10";
@@ -109,7 +112,7 @@ function WidgetViewInner() {
           {timeSpentString}
         </div>
         <pre className="text-xs whitespace-pre-wrap mt-2">{description}</pre>
-        <pre className="text-xs whitespace-pre-wrap mt-2">{nature}</pre>
+        <pre className="text-xs whitespace-pre-wrap mt-2">{JSON.stringify(nature, null, 2)}</pre>
         {image && (
           <img
             src={`data:image/png;base64,${image}`}
@@ -119,14 +122,13 @@ function WidgetViewInner() {
         )}
       </div>
     );
-    backgroundStyle.backgroundColor = "transparent";
   } else {
     backgroundStyle.backgroundColor = "rgba(0, 0, 0, 0.5)";
   }
 
   return (
     // <XEyes />
-    <div className="w-[100vw] h-[100vh]" style={backgroundStyle}>
+    <div className="w-[100vw] h-[100vh] transition-colors duration-1000 ease-in-out" style={backgroundStyle}>
       {innerElement}
     </div>
   );
