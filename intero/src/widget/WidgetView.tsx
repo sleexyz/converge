@@ -23,7 +23,9 @@ function WidgetViewInner() {
   const [_interval, setInterval] = useState<number | null>(null);
   const [_tick, setTick] = useState(0);
   const [description, setDescription] = useState("");
-  const [nature, setNature] = useState<{activity: string, reason: string}|undefined>(undefined);
+  const [nature, setNature] = useState<
+    { activity: string; reason: string } | undefined
+  >(undefined);
   const [image, setImage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -39,6 +41,7 @@ function WidgetViewInner() {
         console.error(e);
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
+      await new Promise((resolve) => setTimeout(resolve, 10000));
       if (!cancel) {
         loop();
       }
@@ -70,8 +73,9 @@ function WidgetViewInner() {
   const { row, activity } = useActiveActivity();
 
   let innerElement = <></>;
+  let message = <></>;
   const backgroundStyle: React.CSSProperties = {
-    backgroundColor: "rgba(0, 0, 0, 0.0)"
+    backgroundColor: "rgba(0, 0, 0, 0.0)",
   };
 
   const ref = useRef<any>();
@@ -90,7 +94,12 @@ function WidgetViewInner() {
     let classes = "transition-opacity duration-150 ease-in-out";
 
     if (nature?.activity === "distraction") {
-      backgroundStyle.backgroundColor = "rgba(0, 0, 0, 0.5)";
+      backgroundStyle.backgroundColor = "rgba(0, 0, 0, 0.7)";
+      message = (
+        <div className="flex items-center justify-center w-full h-full text-4xl text-white">
+          Hey! Focus!
+        </div>
+      );
     }
 
     if (inWindow) {
@@ -112,7 +121,9 @@ function WidgetViewInner() {
           {timeSpentString}
         </div>
         <pre className="text-xs whitespace-pre-wrap mt-2">{description}</pre>
-        <pre className="text-xs whitespace-pre-wrap mt-2">{JSON.stringify(nature, null, 2)}</pre>
+        <pre className="text-xs whitespace-pre-wrap mt-2">
+          {JSON.stringify(nature, null, 2)}
+        </pre>
         {image && (
           <img
             src={`data:image/png;base64,${image}`}
@@ -123,12 +134,21 @@ function WidgetViewInner() {
       </div>
     );
   } else {
-    backgroundStyle.backgroundColor = "rgba(0, 0, 0, 0.5)";
+    message = (
+      <div className="flex items-center justify-center w-full h-full text-4xl">
+        What's next?
+      </div>
+    );
+    backgroundStyle.backgroundColor = "rgba(255, 255, 255, 0.5)";
   }
 
   return (
     // <XEyes />
-    <div className="w-[100vw] h-[100vh] transition-colors duration-1000 ease-in-out" style={backgroundStyle}>
+    <div
+      className="w-[100vw] h-[100vh] transition-colors duration-[2000ms] ease-in-out"
+      style={backgroundStyle}
+    >
+      {message}
       {innerElement}
     </div>
   );
