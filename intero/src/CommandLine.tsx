@@ -249,6 +249,28 @@ const commands = Object.fromEntries(
       },
     }),
     new Command({
+      command: "focus",
+      argsShape: {
+        subject: ArgType.Id,
+      },
+      async runCommand(args, { preferencesManager, canvasManager }) {
+        await preferencesManager.focus(args.subject);
+        await canvasManager.waitForPropagation();
+        canvasManager.layoutNodes();
+      },
+    }),
+    new Command({
+      command: "unfocus",
+      argsShape: {
+        subject: ArgType.Id,
+      },
+      async runCommand(_args, { preferencesManager, canvasManager }) {
+        await preferencesManager.unfocus();
+        await canvasManager.waitForPropagation();
+        canvasManager.layoutNodes();
+      },
+    }),
+    new Command({
       command: "reload",
       argsShape: {},
       async runCommand(_args, _ctx) {
