@@ -337,8 +337,8 @@ class ScreenRecorder: NSObject,
             streamConfig.height = Int(window.frame.height) * 2
         }
 
-        // Set the capture interval at 5 fps.
-        streamConfig.minimumFrameInterval = CMTime(value: 1, timescale: 5)
+        // Set the capture interval at 10 fps.
+        streamConfig.minimumFrameInterval = CMTime(value: 1, timescale: 10)
 
         // Increase the depth of the frame queue to ensure high fps at the expense of increasing
         // the memory footprint of WindowServer.

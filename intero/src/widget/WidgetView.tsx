@@ -22,26 +22,28 @@ function useActiveActivity() {
 function WidgetViewInner() {
   const [_interval, setInterval] = useState<number | null>(null);
   const [_tick, setTick] = useState(0);
-  const [description, setDescription] = useState("");
   const [nature, setNature] = useState<
-    { activity: string; reason: string } | undefined
+    { description: string, activity: string; reason: string } | undefined
   >(undefined);
   const [image, setImage] = useState<string | null>(null);
 
   useEffect(() => {
     let cancel = false;
+    // minimum frame interval (ms)
+    const minFrameInterval = 20 * 1000;
     async function loop() {
+      const timeNow = new Date().getTime();
       try {
-        const { response, nature, image } =
+        const { nature, image } =
           await ScreenWatcher.instance.start();
-        setDescription(response);
         setNature(nature);
         setImage(image);
       } catch (e) {
         console.error(e);
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
-      // await new Promise((resolve) => setTimeout(resolve, 10000));
+      const timeElapsed = new Date().getTime() - timeNow;
+      await new Promise(resolve => setTimeout(resolve, Math.max(minFrameInterval - timeElapsed, 0)));
       if (!cancel) {
         loop();
       }
@@ -120,7 +122,6 @@ function WidgetViewInner() {
         <div className="rounded-xl text-xs mb-10 font-mono">
           {timeSpentString}
         </div>
-        <pre className="text-xs whitespace-pre-wrap mt-2">{description}</pre>
         <pre className="text-xs whitespace-pre-wrap mt-2">
           {JSON.stringify(nature, null, 2)}
         </pre>

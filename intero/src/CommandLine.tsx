@@ -67,13 +67,6 @@ class Command<A extends ArgsShape> {
 const commands = Object.fromEntries(
   [
     new Command({
-      command: "screenshot",
-      argsShape: {},
-      runCommand(_args) {
-        ScreenWatcher.instance.screenshot();
-      },
-    }),
-    new Command({
       command: "layout",
       argsShape: {},
       runCommand(_args, { canvasManager }) {
