@@ -323,12 +323,12 @@ class ScreenRecorder: NSObject,
 
         // Configure the display content width and height.
         if captureType == .display, let display = selectedDisplay {
-            // streamConfig.width = display.width * scaleFactor
-            // streamConfig.height = display.height * scaleFactor
-            streamConfig.width = display.width / 2
-            streamConfig.height = display.height / 2
+            streamConfig.width = display.width * scaleFactor
+            streamConfig.height = display.height * scaleFactor
+            // streamConfig.width = display.width / 2
+            // streamConfig.height = display.height / 2
         }
-        streamConfig.scalesToFit = true
+        // streamConfig.scalesToFit = true
 
         // Configure the window content width and height.
         if captureType == .window, let window = selectedWindow {

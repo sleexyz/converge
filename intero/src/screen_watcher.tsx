@@ -20,8 +20,8 @@ export class ScreenWatcher {
     const endTime = performance.now(); // End timing
     console.log(`Time elapsed: ${endTime - startTime} ms`); // Log time elapsed
     return {
+      image: results[0],
       response,
-      result: results[0],
       timeElapsed: endTime - startTime,
     }
   }
@@ -58,7 +58,11 @@ export class ScreenWatcher {
       method: "POST",
       body: JSON.stringify({
         model: "llava",
-        prompt: "What am I doing right now? Be concise.",
+        options: {
+          temperature: 0,
+        },
+        system: `You are an AI assistant tasked with helping the user stay focused. You are currently analyzing the user's screen.`,
+        prompt: `What is the user doing right now? Be concise.`,
         stream: false,
         images: [screenshot],
       }),
