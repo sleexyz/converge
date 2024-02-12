@@ -13,7 +13,7 @@ export class ScreenWatcher {
     const startTime = performance.now(); // Start timing
 
     const results = await this.screenshot();
-    const nature = await this.getScreenshotDescriptionLocal2(results[0]);
+    const nature = await this.getScreenshotDescriptionOpenAI(results[0]);
     // const nature = await this.determineNature(response);
     const endTime = performance.now(); // End timing
     // console.log(`Time elapsed: ${endTime - startTime} ms`); // Log time elapsed
@@ -31,21 +31,31 @@ export class ScreenWatcher {
     return results;
   }
 
-  private async getScreenshotDescriptionOpenAI(screenshot: string) {
+  private async getScreenshotDescriptionOpenAI(screenshot: string): Promise<{
+    description: string;
+    activity: string;
+    reason: string;
+  }> {
     const response = await openai.chat.completions.create({
       model: "gpt-4-vision-preview",
+      // NOTE: gpt4-vision-preview does not support json_object response format yet.
+      // response_format: { type: "json_object" },
       messages: [
         {
           role: "system",
           content:
-            "You are an AI assistant tasked with analyzing the user's screen.",
+            "You are an AI assistant tasked with analyzing the user's screen. You must respond in valid JSON. Use the following typescript type: { description: string; activity: string; reason: string; }. Do not use a markdown code block.",
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: `Give concise description of the screenshot. Be concise.`,
+              text: `Describe the nature of the activity in the screen with one of the following categories:
+- "work" - includes work-related activities such as coding, writing, etc.
+- "distraction" - includes social media, news, etc.
+- "unknown" - if you are unsure. includes switching windows, etc.
+`,
             },
             {
               type: "image_url",
@@ -58,7 +68,7 @@ export class ScreenWatcher {
       ],
       max_tokens: 1500,
     });
-    return response.choices[0].message.content;
+    return JSON.parse(response.choices[0].message.content ?? "null");
   }
 
   private async getScreenshotDescriptionLocal(screenshot: string) {
@@ -71,7 +81,19 @@ export class ScreenWatcher {
           // max_tokens: 1000,
         },
         system: `You are an AI assistant tasked with analyzing the user's screen.`,
-        prompt: `Give concise description of the activity in the screenshot. Be concise.`,
+        prompt: `Describe the nature of the activity in the screen with one of the following categories:
+- "work" - includes work-related activities such as coding, writing, etc.
+- "distraction" - includes social media, news, etc.
+- "unknown" - if you are unsure. includes switching windows, etc.
+
+Give a reason for your response. Be concise.
+Respond in JSON.
+Use the following typescript type: 
+{
+  description: string;
+  activity: string;
+  reason: string;
+}`,
         stream: false,
         images: [screenshot],
       }),
@@ -96,15 +118,17 @@ export class ScreenWatcher {
         },
         system: `You are an AI assistant tasked with analyzing the user's screen.`,
         prompt: `Describe the nature of the activity in the screen with one of the following categories:
-- work 
-- distraction
-- unknown
+- "work" - includes work-related activities such as coding, writing, etc.
+- "distraction" - includes social media, news, etc.
+- "unknown" - if you are unsure. includes switching windows, etc.
+
 Give a reason for your response. Be concise.
 Respond in JSON.
-Example: {
-  "description": "The user is browsing articles",
-  "activity": "distraction",
-  "reason": "Browsing articles is not related to the user's work."
+Use the following typescript type: 
+{
+  description: string;
+  activity: string;
+  reason: string;
 }`,
         format: "json",
         stream: false,
