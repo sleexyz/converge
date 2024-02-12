@@ -25,14 +25,35 @@ export interface TNodeData {
   __parents?: Id[];
 }
 
+const memoizeFn = <T extends () => any>(fn: T): T => {
+  const state: { value?: ReturnType<T> } = {};
+  return (() => {
+    if (state.hasOwnProperty("value")) {
+      return state.value as ReturnType<T>;
+    }
+    state.value = fn();
+    return state.value as ReturnType<T>;
+  }) as T;
+}
+
 export class TNode {
-  constructor(readonly id: Id, readonly data: TNodeData) {}
+  constructor(readonly id: Id, readonly data: TNodeData, readonly ctx: Toposorter) {}
   children() {
     return this.data.children;
   }
   parents() {
     return this.data.__parents ?? [];
   }
+  ancestors = memoizeFn(() => {
+    const out = new Set<Id>();
+    for (let parent of this.parents()) {
+      out.add(parent);
+      for (let ancestor of this.ctx.getNode(parent).ancestors()) {
+        out.add(ancestor);
+      }
+    }
+    return out;
+  });
   get pinned() {
     return this.data.pinned;
   }
@@ -75,11 +96,16 @@ export interface NodeContext {
 }
 
 export class Toposorter {
-  visited = new Set<Id>();
-  readonly data: Record<Id, TNodeData>;
+  private visited = new Set<Id>();
+  private readonly inputData: Record<Id, TNodeData>;
+  outputData: Record<Id, TNode> = {};
+
+  public getNode(id: Id): TNode {
+    return this.outputData[id];
+  }
 
   private constructor(entries: [key: Id, value: TNodeData][]) {
-    this.data = Object.fromEntries(entries);
+    this.inputData = Object.fromEntries(entries);
   }
 
   // Returns topologically sorted nodes.
@@ -90,14 +116,16 @@ export class Toposorter {
   // Visit all nodes.
   // Visit all of a node's children recursively before visiting a node.
   // Then insertion order should be topologically sorted.
-  sort(): [key: Id, value: TNode][] {
+  private sort(): [key: Id, value: TNode][] {
     const nodes: Record<Id, TNode> = {};
 
-    for (let key of Object.keys(this.data)) {
+    for (let key of Object.keys(this.inputData)) {
       this.visitChildren(key, nodes);
     }
 
-    return [...this.visited].map((x) => [x, nodes[x]]);
+    let entries = [...this.visited].map((x) => [x, nodes[x]]) as [Id, TNode][];
+    this.outputData = Object.fromEntries(entries);
+    return entries;
   }
 
   // DFS
@@ -107,19 +135,19 @@ export class Toposorter {
       return;
     }
 
-    const data = this.data[key];
+    const data = this.inputData[key];
     if (!data) {
       return;
     }
 
-    const node = new TNode(key, {...data});
+    const node = new TNode(key, {...data}, this);
     let maxVec = makeScoreVector(node);
     for (let childId of node.children()) {
       this.visitChildren(childId, nodes);
       maxVec = chooseMaxVec(maxVec, nodes[childId].maxVec()!);
       nodes[childId].parents().push(key);
     }
-    nodes[key] = new TNode(key, {...this.data[key], __maxVec: maxVec, __parents: [] });
+    nodes[key] = new TNode(key, {...this.inputData[key], __maxVec: maxVec, __parents: [] }, this);
     this.visited.add(key);
   }
 }
