@@ -28,5 +28,8 @@
     "nixEnvSelector.nixFile": "${workspaceFolder}/flake.nix",
     "[swift]": {
         "editor.defaultFormatter": "vknabel.vscode-swiftformat"
+    },
+    "[nix]": {
+        "editor.defaultFormatter": "jnoortheen.nix-ide"
     }
 }

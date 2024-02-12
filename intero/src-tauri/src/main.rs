@@ -6,6 +6,7 @@ mod window_ext;
 mod panel_ext;
 mod widget;
 mod screenshot;
+mod ffi;
 
 
 use clippy_app::main_window::position_window_fullscreen;
@@ -19,7 +20,7 @@ use cocoa::base::{id, nil};
 use cocoa::foundation::{NSPoint, NSRect};
 use window_vibrancy::NSVisualEffectMaterial;
 
-use std::process;
+use std::{process, thread};
 
 
 fn make_tray() -> SystemTray {
@@ -42,6 +43,10 @@ fn handle_tray_event(app: &AppHandle, event: SystemTrayEvent) {
 }
 
 fn main() {
+    thread::spawn(|| {
+        let _output = unsafe { ffi::start() };
+    });
+
     tauri::Builder::default()
         .plugin(tauri_nspanel::init())
         .plugin(tauri_plugin_store::Builder::default().build())
@@ -79,7 +84,7 @@ fn main() {
 
 #[tauri::command]
 async fn screenshot(app: AppHandle<Wry>) -> Vec<String> {
-    return screenshot::capture(app.config()).await;
+    return screenshot::capture().await;
 }
 
 #[tauri::command]

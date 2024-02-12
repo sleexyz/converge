@@ -1,12 +1,4 @@
-//
-//  clippyApp.swift
-//  clippy
-//
-//  Created by Sean Lee on 12/7/23.
-//
-
 import AppKit
-import SwiftData
 import SwiftUI
 
 class DraggableHostingView<Content>: NSHostingView<Content> where Content: View {
@@ -33,10 +25,17 @@ class InspectorPanel: NSPanel {
      */
 }
 
-class AppDelegate: NSObject, NSApplicationDelegate {
+public class AppDelegate: NSObject, NSApplicationDelegate {
     var window: InspectorPanel!
 
     var statusBarItem: NSStatusItem?
+
+    public static func start() {
+        let appDelegate = AppDelegate()
+        let application = NSApplication.shared
+        application.delegate = appDelegate
+        _ = NSApplicationMain(CommandLine.argc, CommandLine.unsafeArgv)
+    }
 
     @objc func option1() {
         // Handle the action for the first menu item
@@ -46,7 +45,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApplication.shared.terminate(self)
     }
 
-    func applicationDidFinishLaunching(_: Notification) {
+    public func applicationDidFinishLaunching(_: Notification) {
         statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
 
         // Set the icon
@@ -104,9 +103,3 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.orderFrontRegardless()
     }
 }
-
-let appDelegate = AppDelegate()
-let application = NSApplication.shared
-application.delegate = appDelegate
-
-_ = NSApplicationMain(CommandLine.argc, CommandLine.unsafeArgv)

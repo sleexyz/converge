@@ -23,6 +23,30 @@
             "name": "Release clippy-lib (clippy-lib)",
             "program": "${workspaceFolder:converge}/clippy-lib/.build/release/clippy-lib",
             "preLaunchTask": "swift: Build Release clippy-lib (clippy-lib)"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "args": [],
+            "cwd": "${workspaceFolder:converge}/recorder",
+            "name": "Debug recorder (recorder)",
+            "program": "${workspaceFolder:converge}/recorder/.build/debug/recorder",
+            "preLaunchTask": "swift: Build Debug recorder (recorder)"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "args": [],
+            "cwd": "${workspaceFolder:converge}/recorder",
+            "name": "Release recorder (recorder)",
+            "program": "${workspaceFolder:converge}/recorder/.build/release/recorder",
+            "preLaunchTask": "swift: Build Release recorder (recorder)"
         }
     ]
 }

@@ -1,15 +1,28 @@
 use std::{sync::Arc, time::{SystemTime, UNIX_EPOCH}};
-use cocoa::base;
 use tauri::api::path;
 use xcap::Monitor;
 use base64::prelude::*;
 use image::ImageOutputFormat; // This assumes you're using the `image` crate for image manipulation
-use std::io::Cursor; // Add this import
+use std::io::Cursor;
+
+use crate::ffi; // Add this import
 
 
 
 
-pub async fn capture(config: Arc<tauri::Config>) -> Vec<String> {
+pub async fn capture() -> Vec<String> {
+    let data = unsafe { ffi::get_last_frame() };
+    if let Some(data) = data {
+        let base64_string = BASE64_STANDARD.encode(data);
+        return vec![base64_string];
+    } else {
+        println!("No data");
+        // Handle the None case or return an empty Vec or error
+        return vec![];
+    }
+}
+
+pub async fn capture_old(config: Arc<tauri::Config>) -> Vec<String> {
     let start = SystemTime::now();
     let app_cache_dir = path::app_cache_dir(&config)
         .unwrap()

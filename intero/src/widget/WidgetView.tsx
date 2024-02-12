@@ -9,6 +9,7 @@ import {
   ToposorterStateProvider,
 } from "../ToposorterState";
 import { GlassWindow } from "./GlassWindow";
+import { ScreenWatcher } from "../screen_watcher";
 
 interface MouseMoved {
   x: number;
@@ -30,14 +31,23 @@ function useActiveActivity() {
 
 function WidgetViewInner() {
   const [_interval, setInterval] = useState<number | null>(null);
-  const [_tick, setTick] = useState(0);
+  // const [_tick, setTick] = useState(0);
+  const [description, setDescription] = useState("");
+
+  useEffect(() => {
+    return 
+  }, []);
 
   // TODO: clear interval after timer ends.
   useEffect(() => {
     setInterval(
       window.setInterval(() => {
-        setTick((tick) => tick + 1);
-      }, 1000)
+        (async () => {
+          const {response} = await ScreenWatcher.instance.start();
+          setDescription(response);
+        })()
+        // setTick((tick) => tick + 1);
+      }, 10000)
     );
 
     return () => {
@@ -57,7 +67,7 @@ function WidgetViewInner() {
 
   const ref = useRef<any>();
 
-  const coords = useMousePosition();
+  const mouseCoords = useMousePosition();
 
   if (activity && row) {
     // const timeSpentMillis = start ? ((Date.now() - start.getTime())) : 0;
@@ -75,7 +85,7 @@ function WidgetViewInner() {
 
     let inWindow = false;
     if (rect) {
-      if (coords.x >= rect.x  && coords.x <= rect.x + rect.width && coords.y >= rect.y && coords.y <= rect.y + rect.height) {
+      if (mouseCoords.x >= rect.x  && mouseCoords.x <= rect.x + rect.width && mouseCoords.y >= rect.y && mouseCoords.y <= rect.y + rect.height) {
         inWindow = true;
       }
     }
@@ -89,13 +99,15 @@ function WidgetViewInner() {
     innerElement = (
       <GlassWindow
         className={[
-          "absolute bottom-0 right-0 flex flex-col items-end justify-end",
+          "absolute bottom-0 right-0 flex flex-col items-end justify-end max-w-96",
           classes,
         ].join(" ")}
         ref={ref}
       >
         <div className="rounded-xl p-2 text-2xl">{activity.value}</div>
         <div className="rounded-xl p-2">{timeSpentString}</div>
+        <br />
+        <pre className="text-xs whitespace-pre-wrap">{description}</pre>
       </GlassWindow>
     );
     backgroundStyle.backgroundColor = "transparent";

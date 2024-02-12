@@ -5,7 +5,6 @@ Abstract:
 An object that captures a stream of captured sample buffers containing screen and audio content.
 */
 import Foundation
-import AVFAudio
 import ScreenCaptureKit
 import OSLog
 import Combine
@@ -29,11 +28,6 @@ class CaptureEngine: NSObject, @unchecked Sendable {
     private(set) var stream: SCStream?
     private var streamOutput: CaptureEngineStreamOutput?
     private let videoSampleBufferQueue = DispatchQueue(label: "com.example.apple-samplecode.VideoSampleBufferQueue")
-    private let audioSampleBufferQueue = DispatchQueue(label: "com.example.apple-samplecode.AudioSampleBufferQueue")
-    
-    // Performs average and peak power calculations on the audio samples.
-//    private let powerMeter = PowerMeter()
-//    var audioLevels: AudioLevels { powerMeter.levels }
     
     // Store the the startCapture continuation, so that you can cancel it when you call stopCapture().
     private var continuation: AsyncThrowingStream<CapturedFrame, Error>.Continuation?
@@ -51,7 +45,6 @@ class CaptureEngine: NSObject, @unchecked Sendable {
                 
                 // Add a stream output to capture screen content.
                 try stream?.addStreamOutput(streamOutput, type: .screen, sampleHandlerQueue: videoSampleBufferQueue)
-                try stream?.addStreamOutput(streamOutput, type: .audio, sampleHandlerQueue: audioSampleBufferQueue)
                 stream?.startCapture()
             } catch {
                 continuation.finish(throwing: error)
@@ -66,7 +59,6 @@ class CaptureEngine: NSObject, @unchecked Sendable {
         } catch {
             continuation?.finish(throwing: error)
         }
-//        powerMeter.processSilence()
     }
     
     /// - Tag: UpdateStreamConfiguration
@@ -83,7 +75,6 @@ class CaptureEngine: NSObject, @unchecked Sendable {
 /// A class that handles output from an SCStream, and handles stream errors.
 private class CaptureEngineStreamOutput: NSObject, SCStreamOutput, SCStreamDelegate {
     
-    var pcmBufferHandler: ((AVAudioPCMBuffer) -> Void)?
     var capturedFrameHandler: ((CapturedFrame) -> Void)?
     
     // Store the  startCapture continuation, so you can cancel it if an error occurs.
@@ -107,7 +98,7 @@ private class CaptureEngineStreamOutput: NSObject, SCStreamOutput, SCStreamDeleg
             capturedFrameHandler?(frame)
         case .audio:
             // Process audio as an AVAudioPCMBuffer for level calculation.
-            handleAudio(for: sampleBuffer)
+            fatalError("Encountered unsupported audio output type: \(outputType)")
         @unknown default:
             fatalError("Encountered unknown stream output type: \(outputType)")
         }
@@ -145,17 +136,6 @@ private class CaptureEngineStreamOutput: NSObject, SCStreamOutput, SCStreamDeleg
                                   contentScale: contentScale,
                                   scaleFactor: scaleFactor)
         return frame
-    }
-    
-    private func handleAudio(for buffer: CMSampleBuffer) -> Void? {
-        // Create an AVAudioPCMBuffer from an audio sample buffer.
-        try? buffer.withAudioBufferList { audioBufferList, blockBuffer in
-            guard let description = buffer.formatDescription?.audioStreamBasicDescription,
-                  let format = AVAudioFormat(standardFormatWithSampleRate: description.mSampleRate, channels: description.mChannelsPerFrame),
-                  let samples = AVAudioPCMBuffer(pcmFormat: format, bufferListNoCopy: audioBufferList.unsafePointer)
-            else { return }
-            pcmBufferHandler?(samples)
-        }
     }
     
     func stream(_ stream: SCStream, didStopWithError error: Error) {

@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import SwiftData
 
 class CursorTracker: ObservableObject {
     @Published var cursorPosition: CGPoint = .zero
