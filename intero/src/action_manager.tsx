@@ -8,12 +8,13 @@ import {
   statusToPoints,
 } from "./ToposorterState";
 import { UIState, UIStateContext } from "./ui_state";
-import { useSelectedNode } from "./Selection";
+import { SelectionManager, SelectionManagerContext, useSelectedNode } from "./Selection";
 import { CanvasManager, CanvasManagerContext} from "./canvas_controller";
 
 export class ActionManager {
   constructor(
     readonly stateManager: ToposorterStateManager,
+    readonly selectionManager: SelectionManager,
     readonly canvasManager: CanvasManager,
     readonly setSelectedNode: (id: Id | null) => Promise<void>,
     readonly uiState: UIState
@@ -29,6 +30,8 @@ export class ActionManager {
     const id = await this.stateManager.add(from, connectionType);
     await this.canvasManager.waitForPropagation();
     await this.setSelectedNode(id);
+    // TODO: bake this into setSelectedNode
+    this.uiState.updateFocus(this.selectionManager, this.stateManager);
     this.uiState.focusTitle();
 
     await this.canvasManager.layoutNodesAndCenterSelected();
@@ -81,6 +84,7 @@ export const ActionManagerContext = React.createContext<ActionManager | null>(
 
 export function ActionManagerProvider(props: { children: React.ReactNode }) {
   const stateManager = useContext(ToposorterStateManagerContext)!;
+  const selectionManager = useContext(SelectionManagerContext)!;
   const [, setSelectedNode] = useSelectedNode();
   const uiState = useContext(UIStateContext)!;
 
@@ -90,11 +94,12 @@ export function ActionManagerProvider(props: { children: React.ReactNode }) {
   const actionManager = React.useMemo(() => {
     return new ActionManager(
       stateManager,
+      selectionManager,
       canvasManager,
       setSelectedNode,
       uiState
     );
-  }, [stateManager, canvasManager, setSelectedNode, uiState]);
+  }, [stateManager, selectionManager, canvasManager, setSelectedNode, uiState]);
 
   return (
     <ActionManagerContext.Provider value={actionManager}>
