@@ -31,23 +31,36 @@ function useActiveActivity() {
 
 function WidgetViewInner() {
   const [_interval, setInterval] = useState<number | null>(null);
-  // const [_tick, setTick] = useState(0);
+  const [_tick, setTick] = useState(0);
   const [description, setDescription] = useState("");
 
   useEffect(() => {
-    return 
+    let cancel = false;
+    async function loop() {
+      try {
+        const {response, timeElapsed} = await ScreenWatcher.instance.start();
+        setDescription(response);
+        console.log(`Time elapsed: ${timeElapsed} ms`);
+      } catch (e) {
+        console.error(e);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+      if (!cancel) {
+        loop();
+      }
+    }
+    loop();
+    return () => {
+      cancel = true;
+    }
   }, []);
 
   // TODO: clear interval after timer ends.
   useEffect(() => {
     setInterval(
       window.setInterval(() => {
-        (async () => {
-          const {response} = await ScreenWatcher.instance.start();
-          setDescription(response);
-        })()
-        // setTick((tick) => tick + 1);
-      }, 10000)
+        setTick((tick) => tick + 1);
+      }, 1000)
     );
 
     return () => {
