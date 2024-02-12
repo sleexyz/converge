@@ -13,13 +13,14 @@ export class ScreenWatcher {
     const startTime = performance.now(); // Start timing
 
     const results = await this.screenshot();
-    const response = await this.getScreenshotDescriptionLocal(results[0]);
-    const nature = await this.determineNature(response);
+    const nature = await this.getScreenshotDescriptionLocal2(results[0]);
+    // const nature = await this.determineNature(response);
     const endTime = performance.now(); // End timing
     // console.log(`Time elapsed: ${endTime - startTime} ms`); // Log time elapsed
+
     return {
       image: results[0],
-      response,
+      response: nature.description,
       nature,
       timeElapsed: endTime - startTime,
     };
@@ -80,6 +81,41 @@ export class ScreenWatcher {
     return responseJson.response;
   }
 
+  private async getScreenshotDescriptionLocal2(screenshot: string): Promise<{
+    description: string;
+    activity: string;
+    reason: string;
+  }> {
+    const response = await fetch("http://localhost:11434/api/generate", {
+      method: "POST",
+      body: JSON.stringify({
+        model: "llava",
+        options: {
+          temperature: 0,
+          // max_tokens: 1000,
+        },
+        system: `You are an AI assistant tasked with analyzing the user's screen.`,
+        prompt: `Describe the nature of the activity in the screen with one of the following categories:
+- work 
+- distraction
+- unknown
+Give a reason for your response. Be concise.
+Respond in JSON.
+Example: {
+  "description": "The user is browsing articles",
+  "activity": "distraction",
+  "reason": "Browsing articles is not related to the user's work."
+}`,
+        format: "json",
+        stream: false,
+        images: [screenshot],
+      }),
+    });
+    const responseJson = await response.json();
+    console.log(responseJson);
+    return JSON.parse(responseJson.response);
+  }
+
   private async determineNature(description: string): Promise<{
     activity: string;
     reason: string;
@@ -95,11 +131,15 @@ export class ScreenWatcher {
         prompt: `Here is a description of a user's screen:
 ${description}.
 Describe the nature of the activity in the screen.  Respond with one of the following:
-- productive
+- work 
 - distraction
 - unknown
 Give a reason for your response. Be concise.
 Respond in JSON.
+Example: {
+  "activity": "distraction",
+  "reason": "The user is browsing articles."
+}
 `,
         format: "json",
         stream: false,
