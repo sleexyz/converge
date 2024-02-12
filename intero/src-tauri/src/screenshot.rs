@@ -8,8 +8,6 @@ use std::io::Cursor;
 use crate::ffi; // Add this import
 
 
-
-
 pub async fn capture() -> Vec<String> {
     let data = unsafe { ffi::get_last_frame() };
     if let Some(data) = data {
