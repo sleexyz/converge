@@ -33,13 +33,16 @@ function WidgetViewInner() {
   const [_interval, setInterval] = useState<number | null>(null);
   const [_tick, setTick] = useState(0);
   const [description, setDescription] = useState("");
+  const [image, setImage] = useState<string | null>(null);
 
   useEffect(() => {
     let cancel = false;
     async function loop() {
       try {
-        const {response, timeElapsed} = await ScreenWatcher.instance.start();
+        const { response, image, timeElapsed } =
+          await ScreenWatcher.instance.start();
         setDescription(response);
+        setImage(image);
         console.log(`Time elapsed: ${timeElapsed} ms`);
       } catch (e) {
         console.error(e);
@@ -52,7 +55,7 @@ function WidgetViewInner() {
     loop();
     return () => {
       cancel = true;
-    }
+    };
   }, []);
 
   // TODO: clear interval after timer ends.
@@ -98,7 +101,12 @@ function WidgetViewInner() {
 
     let inWindow = false;
     if (rect) {
-      if (mouseCoords.x >= rect.x  && mouseCoords.x <= rect.x + rect.width && mouseCoords.y >= rect.y && mouseCoords.y <= rect.y + rect.height) {
+      if (
+        mouseCoords.x >= rect.x &&
+        mouseCoords.x <= rect.x + rect.width &&
+        mouseCoords.y >= rect.y &&
+        mouseCoords.y <= rect.y + rect.height
+      ) {
         inWindow = true;
       }
     }
@@ -110,18 +118,26 @@ function WidgetViewInner() {
     }
 
     innerElement = (
-      <GlassWindow
+      <div
         className={[
-          "absolute bottom-0 right-0 flex flex-col items-end justify-end max-w-96",
+          "absolute bottom-0 right-0 flex flex-col items-end justify-end max-w-96 bg-black bg-opacity-80 p-2 rounded-xl m-2 text-white text-xs font-mono",
           classes,
         ].join(" ")}
         ref={ref}
       >
-        <div className="rounded-xl p-2 text-2xl">{activity.value}</div>
-        <div className="rounded-xl p-2">{timeSpentString}</div>
-        <br />
-        <pre className="text-xs whitespace-pre-wrap">{description}</pre>
-      </GlassWindow>
+        <div className="rounded-xl text-xs font-mono">{activity.value}</div>
+        <div className="rounded-xl text-xs mb-10 font-mono">
+          {timeSpentString}
+        </div>
+        <pre className="text-xs whitespace-pre-wrap mt-2">{description}</pre>
+        {image && (
+          <img
+            src={`data:image/png;base64,${image}`}
+            alt="screenshot"
+            className="rounded-xl mt-2"
+          />
+        )}
+      </div>
     );
     backgroundStyle.backgroundColor = "transparent";
   } else {
@@ -137,13 +153,13 @@ function WidgetViewInner() {
 }
 
 function useMousePosition() {
-  const [coords, setCoords] = useState({x: 0, y: 0});
+  const [coords, setCoords] = useState({ x: 0, y: 0 });
   useEffect(() => {
     const unlistenPromise = listen("mouse-moved", (event) => {
       const mouseMoved = event.payload as MouseMoved;
       const x = mouseMoved.x - mouseMoved.window_x;
       const y = mouseMoved.window_height - (mouseMoved.y - mouseMoved.window_y);
-      setCoords({x, y});
+      setCoords({ x, y });
     });
     return () => {
       unlistenPromise.then((unlisten) => {

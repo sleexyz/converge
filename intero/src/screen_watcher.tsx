@@ -62,7 +62,7 @@ export class ScreenWatcher {
           temperature: 0,
         },
         system: `You are an AI assistant tasked with helping the user stay focused. You are currently analyzing the user's screen.`,
-        prompt: `What is the user doing right now? Be concise.`,
+        prompt: `Is the user currently focused on their work?`,
         stream: false,
         images: [screenshot],
       }),

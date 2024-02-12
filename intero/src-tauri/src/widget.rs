@@ -33,7 +33,12 @@ pub fn open_widget_window(app: &AppHandle) {
     .ok();
 
     if let Some(window) = widget_window {
-        window.open_devtools();
+
+        #[cfg(debug_assertions)] // only include this code on debug builds
+        {
+          window.open_devtools();
+        }
+
 
         // window.with_webview(move |webview| {
         // });

@@ -4,7 +4,8 @@ import SwiftRs
 public func start() {
     // print("Starting the app")
     // return AppDelegate.start()
-    Task {
+    Task { @MainActor in
+        ScreenRecorder.shared.isAppExcluded = true
         if await ScreenRecorder.shared.canRecord {
             await ScreenRecorder.shared.start()
         } 

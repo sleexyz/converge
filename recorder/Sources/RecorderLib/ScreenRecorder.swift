@@ -8,8 +8,8 @@ import Combine
 import Foundation
 import OSLog
 import ScreenCaptureKit
-import SwiftUI
 import SwiftRs
+import SwiftUI
 
 @MainActor
 class ScreenRecorder: NSObject,
@@ -200,7 +200,6 @@ class ScreenRecorder: NSObject,
         }
     }
 
-
     /// Stops capturing screen content.
     func stop() async {
         guard isRunning else { return }
@@ -293,6 +292,8 @@ class ScreenRecorder: NSObject,
             if isAppExcluded {
                 excludedApps = availableApps.filter { app in
                     Bundle.main.bundleIdentifier == app.bundleIdentifier
+                        // HACK
+                        || app.applicationName == "intero"
                 }
             }
             // Create a content filter with excluded apps.
