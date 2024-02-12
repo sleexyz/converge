@@ -324,12 +324,12 @@ class ScreenRecorder: NSObject,
 
         // Configure the display content width and height.
         if captureType == .display, let display = selectedDisplay {
-            streamConfig.width = display.width * scaleFactor
-            streamConfig.height = display.height * scaleFactor
-            // streamConfig.width = display.width / 2
-            // streamConfig.height = display.height / 2
+            // streamConfig.width = display.width * scaleFactor
+            // streamConfig.height = display.height * scaleFactor
+            streamConfig.width = display.width / 4
+            streamConfig.height = display.height / 4
         }
-        // streamConfig.scalesToFit = true
+        streamConfig.scalesToFit = true
 
         // Configure the window content width and height.
         if captureType == .window, let window = selectedWindow {
@@ -337,8 +337,8 @@ class ScreenRecorder: NSObject,
             streamConfig.height = Int(window.frame.height) * 2
         }
 
-        // Set the capture interval at 60 fps.
-        streamConfig.minimumFrameInterval = CMTime(value: 2, timescale: 1)
+        // Set the capture interval at 1 fps.
+        streamConfig.minimumFrameInterval = CMTime(value: 1, timescale: 2)
 
         // Increase the depth of the frame queue to ensure high fps at the expense of increasing
         // the memory footprint of WindowServer.
