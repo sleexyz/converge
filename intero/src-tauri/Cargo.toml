@@ -11,8 +11,11 @@ edition = "2021"
 
 [build-dependencies]
 tauri-build = { version = "1.5", features = [] }
+swift-rs = { version = "1.0.5", features = ["build"] }
+
 
 [dependencies]
+swift-rs = "1.0.5"
 tauri = { version = "1.5.4", features = [ "fs-create-dir", "path-all", "fs-write-file", "dialog-all", "global-shortcut-all", "window-all", "system-tray", "macos-private-api", "shell-open"] }
 tauri-nspanel = { git = "https://github.com/sleexyz/tauri-nspanel", rev = "aa9218e4c26d75c293847c2549056f1fbd30a0cc" }
 tauri-plugin-store = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }

@@ -9,12 +9,18 @@ import Foundation
 import OSLog
 import ScreenCaptureKit
 import SwiftUI
+import SwiftRs
 
 @MainActor
 class ScreenRecorder: NSObject,
     ObservableObject,
     SCContentSharingPickerObserver
 {
+    static let shared = ScreenRecorder()
+    override init() {
+        super.init()
+    }
+
     /// The supported capture types.
     enum CaptureType {
         case display
@@ -140,6 +146,8 @@ class ScreenRecorder: NSObject,
         .store(in: &subscriptions)
     }
 
+    var lastFrame: SRData?
+
     /// Starts capturing screen content.
     func start() async {
         // Exit early if already running.
@@ -179,9 +187,11 @@ class ScreenRecorder: NSObject,
                     continue // Skip if the conversion fails
                 }
 
-                let base64EncodedString = pngData.base64EncodedString()
-                let base64Prefix = String(base64EncodedString.prefix(16))
-                print(base64Prefix)
+                lastFrame = SRData([UInt8](pngData))
+
+                // let base64EncodedString = pngData.base64EncodedString()
+                // let base64Prefix = String(base64EncodedString.prefix(16))
+                // print(base64Prefix)
             }
         } catch {
             logger.error("\(error.localizedDescription)")
@@ -189,6 +199,7 @@ class ScreenRecorder: NSObject,
             isRunning = false
         }
     }
+
 
     /// Stops capturing screen content.
     func stop() async {
@@ -312,9 +323,12 @@ class ScreenRecorder: NSObject,
 
         // Configure the display content width and height.
         if captureType == .display, let display = selectedDisplay {
-            streamConfig.width = display.width * scaleFactor
-            streamConfig.height = display.height * scaleFactor
+            // streamConfig.width = display.width * scaleFactor
+            // streamConfig.height = display.height * scaleFactor
+            streamConfig.width = display.width / 2
+            streamConfig.height = display.height / 2
         }
+        streamConfig.scalesToFit = true
 
         // Configure the window content width and height.
         if captureType == .window, let window = selectedWindow {
@@ -323,7 +337,7 @@ class ScreenRecorder: NSObject,
         }
 
         // Set the capture interval at 60 fps.
-        streamConfig.minimumFrameInterval = CMTime(value: 5, timescale: 1)
+        streamConfig.minimumFrameInterval = CMTime(value: 2, timescale: 1)
 
         // Increase the depth of the frame queue to ensure high fps at the expense of increasing
         // the memory footprint of WindowServer.
