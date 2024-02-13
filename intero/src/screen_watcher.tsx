@@ -20,7 +20,7 @@ export class ScreenWatcher {
     return results[0];
   }
 
-  public async getScreenshotDescriptionOpenAI(screenshot: string): Promise<{
+  public async getScreenshotDescriptionOpenAI(screenshot: string, abortController: AbortController): Promise<{
     description: string;
     activity: string;
     reason: string;
@@ -57,7 +57,10 @@ export class ScreenWatcher {
           },
         ],
         max_tokens: 1500,
+      }, {
+        signal: abortController.signal,
       });
+
       let content = response.choices[0].message.content ?? "null";
       console.log(content);
       if (content.startsWith("```json")) {
@@ -86,13 +89,14 @@ export class ScreenWatcher {
     }
   }
 
-  public async getScreenshotDescriptionLocal(screenshot: string): Promise<{
+  public async getScreenshotDescriptionLocal(screenshot: string, abortController: AbortController): Promise<{
     description: string;
     activity: string;
     reason: string;
   }> {
     const response = await fetch("http://localhost:11434/api/generate", {
       method: "POST",
+      signal: abortController.signal,
       body: JSON.stringify({
         model: "llava",
         options: {
@@ -113,6 +117,7 @@ Your user is a software engineer working on AI applications.
         stream: false,
         images: [screenshot],
       }),
+
     });
     const responseJson = await response.json();
     console.log(responseJson);

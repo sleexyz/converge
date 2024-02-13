@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import "./WidgetView.css";
 // import { XEyes } from "./XEyes";
 import { intervalToDuration, formatDuration } from "date-fns";
@@ -148,21 +148,32 @@ function WidgetViewInner() {
 
   const analyzedImageRef = useRef<string | null>(null);
 
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [lock, setLock] = useState(false);
   useEffect(() => {
     (async () => {
-      console.log({ lock, image });
-      if (!lock && image && image !== analyzedImageRef.current) {
+      if (image && image !== analyzedImageRef.current) {
+        if (lock) {
+          abortControllerRef.current?.abort();
+          abortControllerRef.current = null;
+          return;
+        }
         setLock(true);
         analyzedImageRef.current = image;
         setResponse(undefined);
-        const response =
-          await ScreenWatcher.instance.getScreenshotDescriptionOpenAI(image);
-        // check if stale
-        if (imageRef.current === image) {
-          setResponse(response);
+        try {
+          abortControllerRef.current = new AbortController();
+          const response =
+            await ScreenWatcher.instance.getScreenshotDescriptionOpenAI(image, abortControllerRef.current);
+          // check if stale
+          if (imageRef.current === image) {
+            setResponse(response);
+          }
+        } catch(e) {
+          console.error(e);
+        } finally {
+          setLock(false);
         }
-        setLock(false);
       }
     })();
   }, [image, lock]);
