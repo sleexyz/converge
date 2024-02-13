@@ -363,7 +363,7 @@ function DebugView() {
         produce((draft) => {
           draft.aimless = (
             <div
-              className="flex items-center justify-center w-full h-full text-white"
+              className="flex items-center justify-center w-full h-full text-black"
               style={{ fontSize: "10rem" }}
             >
               What's next?
