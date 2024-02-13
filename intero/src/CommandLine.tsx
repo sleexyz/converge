@@ -284,16 +284,6 @@ const commands = Object.fromEntries(
         }
       },
     }),
-    new Command({
-      command: "debug",
-      argsShape: {
-        object: ArgType.boolean,
-      },
-      async runCommand(args, ctx) {
-        ctx.preferencesManager.setShowScreenWatcherDebug(args.object);
-
-      },
-    }),
   ].map((command) => [command.data.command, command])
 );
 

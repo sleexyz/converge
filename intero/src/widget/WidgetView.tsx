@@ -386,8 +386,7 @@ function DebugView() {
   }, [activity && row]);
 
   const preferences = useContext(PreferencesContext)!;
-  console.log(preferences);
-  if (!preferences.showScreenWatcherDebug) {
+  if (preferences.hide.debug) {
     return <></>;
   }
 

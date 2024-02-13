@@ -14,12 +14,13 @@ export interface HideBools {
   done?: boolean;
   task?: boolean;
   goal?: boolean;
+
+  debug?: boolean;
 }
 
 export interface Preferences {
   focus?: Id;
   hide: HideObj;
-  showScreenWatcherDebug?: boolean;
 }
 export const PreferencesContext = React.createContext<Preferences>({
   hide: {},
@@ -56,13 +57,6 @@ export class PreferencesManager {
     await this.setPreferences(
       produce((draft) => {
         draft.focus = undefined;
-      })
-    );
-  }
-  async setShowScreenWatcherDebug(value: boolean) {
-    await this.setPreferences(
-      produce((draft) => {
-        draft.showScreenWatcherDebug = value;
       })
     );
   }
@@ -112,7 +106,9 @@ export function PreferencesProvider({
   const [_preferences, _setPreferences] = useLocalStorageState<Preferences>(
     "preferences",
     {
-      hide: {},
+      hide: {
+        debug: true,
+      },
     }
   );
   const [preferences, setPreferences] = useMakeStateAsync([
