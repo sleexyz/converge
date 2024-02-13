@@ -151,7 +151,7 @@ function WidgetViewInner() {
   const [lock, setLock] = useState(false);
   useEffect(() => {
     (async () => {
-      console.log({lock, image});
+      console.log({ lock, image });
       if (!lock && image && image !== analyzedImageRef.current) {
         setLock(true);
         analyzedImageRef.current = image;
@@ -212,7 +212,8 @@ function WidgetViewInner() {
       backgroundColor: "rgba(0, 0, 0, 0.9)",
     };
 
-    if (natureRef.current === "distraction") {
+    // if (natureRef.current === "distraction") {
+    if (response?.activity === "distraction") {
       backgroundStyle.backgroundColor = "rgba(0, 0, 0, 0.7)";
       message = (
         <div
@@ -224,9 +225,10 @@ function WidgetViewInner() {
       );
     }
 
-    // if (numDiffPixels !== null && numDiffPixels > MIN_NUM_DIFF_PIXELS) {
-    //   style.backgroundColor = "rgba(255, 0, 0, 0.7)";
-    // }
+    const numDiffPixelsStyle: React.CSSProperties = {};
+    if (numDiffPixels !== null && numDiffPixels > MIN_NUM_DIFF_PIXELS) {
+      numDiffPixelsStyle.backgroundColor = "rgba(255, 255, 255, 0.5)";
+    }
 
     if (inWindow) {
       classes += " opacity-10";
@@ -249,7 +251,13 @@ function WidgetViewInner() {
         </div> */}
         <div className="flex-1">
           <pre className="text-sm whitespace-pre-wrap mt-2 w-full">
-            numDiffPixels: {numDiffPixels}
+            numDiffPixels:{" "}
+            <span
+              className="transition-all duration-500 ease-in-out"
+              style={numDiffPixelsStyle}
+            >
+              {numDiffPixels}
+            </span>
           </pre>
           {image && (
             <>

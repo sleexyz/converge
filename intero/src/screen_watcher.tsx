@@ -86,7 +86,7 @@ export class ScreenWatcher {
     }
   }
 
-  private async getScreenshotDescriptionLocal(screenshot: string): Promise<{
+  public async getScreenshotDescriptionLocal(screenshot: string): Promise<{
     description: string;
     activity: string;
     reason: string;
@@ -102,9 +102,12 @@ export class ScreenWatcher {
         system:
           "You are an AI assistant tasked with analyzing the user's screen. You must respond in valid JSON. Use the following typescript type: { description: string; activity: string; reason: string; }",
         prompt: `Describe the nature of the activity in the screen with one of the following categories:
-- "work" - includes work-related activities such as coding, writing, etc.
-- "distraction" - includes social media, news, etc.
-- "unknown" - if you are unsure. includes switching windows, etc.
+- "distraction" - includes social media, news, youtube, etc.
+- "work" - only productive work-related activities.
+- "unknown" - if you are unsure.
+
+Social media, news, youtube, etc. are considered distractions.
+Your user is a software engineer.
 `,
         format: "json",
         stream: false,
