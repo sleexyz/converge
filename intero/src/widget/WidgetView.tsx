@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import "./WidgetView.css";
 // import { XEyes } from "./XEyes";
 import { intervalToDuration, formatDuration } from "date-fns";
@@ -11,6 +18,10 @@ import { ScreenWatcher } from "../screen_watcher";
 import { useInWindow } from "./mouse_hacks";
 import * as pixelmatch from "pixelmatch";
 import { produce } from "immer";
+import {
+  PreferencesContext,
+  PreferencesProvider,
+} from "../preference_state";
 
 function useActiveActivity() {
   const activityLog = useContext(ActivityLogContext)!;
@@ -132,54 +143,52 @@ function ActualWidgetView() {
   return (
     <HideOnHoverDiv className="absolute bottom-0 right-0 flex flex-col items-end justify-end bg-black bg-opacity-80 p-4 rounded-xl m-2 text-white text-sm font-mono space-y-2">
       <div className="rounded-xl text-xl font-mono">{activity.value}</div>
-      <div className="rounded-xl text-xs font-mono">
-        {timeSpentString}
-      </div>
+      <div className="rounded-xl text-xs font-mono">{timeSpentString}</div>
     </HideOnHoverDiv>
   );
 }
 
-type Key = "default" | "distracted" | "aimless";
+type Key = "distracted" | "aimless";
 
 function orderedEntries<T>(obj: Record<Key, T>): [Key, T][] {
-  return (["distracted", "aimless", "default"] as Key[]).map((key) => [
+  return (["distracted", "aimless"] as Key[]).map((key) => [
     key,
     obj[key],
   ]);
 }
 
-function getFirstDefined<T>(obj: Record<Key, T>): T {
+function getFirstDefined<T>(obj: Record<Key, T>, defaultValue: T): T {
   for (const [_, value] of orderedEntries(obj)) {
     if (value !== undefined) {
       return value;
     }
   }
+  return defaultValue;
 }
 function WidgetViewOuter(props: { children: React.ReactNode }) {
   const [backgroundStyle, setBackgroundStyle] = useState<
     Record<string, React.CSSProperties>
-  >({
-    default: {
-      backgroundColor: "rgba(0, 0, 0, 0.0)",
-    },
-  });
+  >({});
 
-  const [message, setMessage] = useState<Record<string, JSX.Element>>({
-    default: <></>,
-  });
+  const [message, setMessage] = useState<Record<string, JSX.Element>>({});
 
-  const uiStateContext = useMemo(() => ({
-    setBackgroundStyle,
-    setMessage,
-  }), [setBackgroundStyle, setMessage]);
+  const uiStateContext = useMemo(
+    () => ({
+      setBackgroundStyle,
+      setMessage,
+    }),
+    [setBackgroundStyle, setMessage]
+  );
 
   return (
     <div
       className="w-[100vw] h-[100vh] transition-colors duration-[2000ms] ease-in-out"
-      style={getFirstDefined(backgroundStyle)}
+      style={getFirstDefined(backgroundStyle, {
+        backgroundColor: "rgba(0, 0, 0, 0.0)",
+      })}
     >
       <UIStateContext.Provider value={uiStateContext}>
-        {getFirstDefined(message)}
+        {getFirstDefined(message, <></>)}
         {props.children}
       </UIStateContext.Provider>
     </div>
@@ -187,10 +196,11 @@ function WidgetViewOuter(props: { children: React.ReactNode }) {
 }
 
 const UIStateContext = createContext<{
-  setBackgroundStyle: React.Dispatch<React.SetStateAction<Record<string, React.CSSProperties>>>; 
+  setBackgroundStyle: React.Dispatch<
+    React.SetStateAction<Record<string, React.CSSProperties>>
+  >;
   setMessage: React.Dispatch<React.SetStateAction<Record<string, JSX.Element>>>;
 } | null>(null);
-
 
 function HideOnHoverDiv(props: React.HTMLProps<HTMLDivElement>) {
   const ref = useRef<HTMLDivElement>(null);
@@ -280,7 +290,7 @@ function DebugView() {
         try {
           abortControllerRef.current = new AbortController();
           const response =
-            await ScreenWatcher.instance.getScreenshotDescriptionOpenAI(
+            await ScreenWatcher.instance.getScreenshotDescriptionLocal(
               image,
               abortControllerRef.current
             );
@@ -375,6 +385,12 @@ function DebugView() {
     }
   }, [activity && row]);
 
+  const preferences = useContext(PreferencesContext)!;
+  console.log(preferences);
+  if (!preferences.showScreenWatcherDebug) {
+    return <></>;
+  }
+
   return (
     <HideOnHoverDiv
       className="absolute bottom-0 left-0 flex flex-col items-end justify-end w-96 max-w-96 bg-black bg-opacity-80 p-4 rounded-xl m-2 text-white text-sm font-mono h-[90vh]"
@@ -430,13 +446,15 @@ function DebugView() {
 
 export function WidgetView() {
   return (
-    <ActivityLogProvider>
-      <ToposorterStateProvider>
-        <WidgetViewOuter>
-          <DebugView />
-          <ActualWidgetView />
-        </WidgetViewOuter>
-      </ToposorterStateProvider>
-    </ActivityLogProvider>
+    <PreferencesProvider>
+      <ActivityLogProvider>
+        <ToposorterStateProvider>
+          <WidgetViewOuter>
+            <DebugView />
+            <ActualWidgetView />
+          </WidgetViewOuter>
+        </ToposorterStateProvider>
+      </ActivityLogProvider>
+    </PreferencesProvider>
   );
 }

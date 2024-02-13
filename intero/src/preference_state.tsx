@@ -19,6 +19,7 @@ export interface HideBools {
 export interface Preferences {
   focus?: Id;
   hide: HideObj;
+  showScreenWatcherDebug?: boolean;
 }
 export const PreferencesContext = React.createContext<Preferences>({
   hide: {},
@@ -55,6 +56,13 @@ export class PreferencesManager {
     await this.setPreferences(
       produce((draft) => {
         draft.focus = undefined;
+      })
+    );
+  }
+  async setShowScreenWatcherDebug(value: boolean) {
+    await this.setPreferences(
+      produce((draft) => {
+        draft.showScreenWatcherDebug = value;
       })
     );
   }

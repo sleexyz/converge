@@ -16,28 +16,22 @@ import { BaseDirectory, createDir, writeBinaryFile } from "@tauri-apps/api/fs";
 import { appDataDir } from "@tauri-apps/api/path";
 import { SearchContainer, SearchInput } from "./Box";
 import { HideObj, PreferencesManager, PreferencesManagerContext } from "./preference_state";
-import { ScreenWatcher } from "./screen_watcher";
 
 class ArgType<_T> {
   static TNode = new ArgType<TNodeRow>();
   static Id = new ArgType<Id>();
   static string = new ArgType<string>();
   static parentOrChild = new ArgType<"parent" | "child">();
+  static boolean = new ArgType<boolean>();
 }
 
 type TypeOfArgType<T> = T extends ArgType<infer U> ? U : never;
 
+type ArgTypeUnion = typeof ArgType[keyof typeof ArgType];
+
 interface ArgsShape {
-  subject?:
-    | typeof ArgType.TNode
-    | typeof ArgType.string
-    | typeof ArgType.Id
-    | typeof ArgType.parentOrChild;
-  object?:
-    | typeof ArgType.TNode
-    | typeof ArgType.string
-    | typeof ArgType.Id
-    | typeof ArgType.parentOrChild;
+  subject?: ArgTypeUnion;
+  object?: ArgTypeUnion;
 }
 
 type VariablesFromArgs<A extends ArgsShape> = {
@@ -290,6 +284,16 @@ const commands = Object.fromEntries(
         }
       },
     }),
+    new Command({
+      command: "debug",
+      argsShape: {
+        object: ArgType.boolean,
+      },
+      async runCommand(args, ctx) {
+        ctx.preferencesManager.setShowScreenWatcherDebug(args.object);
+
+      },
+    }),
   ].map((command) => [command.data.command, command])
 );
 
@@ -315,23 +319,39 @@ function useBoundVariablesFromContext() {
 }
 
 function mapArg<K extends keyof ArgsShape>(
-  command: Command<any>,
+  command: Command<ArgsShape>,
   variables: Variables,
   k: K,
   state: ToposorterState
 ): (arg: string) => void {
   return (arg: string) => {
-    if (command.data.argsShape[k] == ArgType.TNode) {
-      variables[k] = state.reconcileId(arg);
-    }
-    if (command.data.argsShape[k] == ArgType.Id) {
-      variables[k] = state.reconcileId(arg).id;
-    }
-    if (command.data.argsShape[k] == ArgType.string) {
-      variables[k] = arg;
-    }
-    if (command.data.argsShape[k] == ArgType.parentOrChild) {
-      variables[k] = arg;
+    switch (command.data.argsShape[k]) {
+      case ArgType.TNode:
+        variables[k] = state.reconcileId(arg);
+        break;
+      case ArgType.Id:
+        variables[k] = state.reconcileId(arg).id;
+        break;
+      case ArgType.string:
+        variables[k] = arg;
+        break;
+      case ArgType.parentOrChild:
+        variables[k] = arg;
+        break;
+      case ArgType.boolean:
+        switch (arg) {
+          case "true":
+            variables[k] = true;
+            break;
+          case "false":
+            variables[k] = false;
+            break;
+          default:
+            throw new Error("Expected true or false");
+        }
+        break;
+      default:
+        throw new Error("Unknown arg type");
     }
   };
 }
