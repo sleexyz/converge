@@ -107,7 +107,7 @@ export class ScreenWatcher {
 - "unknown" - if you are unsure.
 
 Social media, news, youtube, etc. are considered distractions.
-Your user is a software engineer.
+Your user is a software engineer working on AI applications.
 `,
         format: "json",
         stream: false,
