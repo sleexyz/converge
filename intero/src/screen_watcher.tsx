@@ -109,8 +109,7 @@ export class ScreenWatcher {
 - "distraction" - includes social media, news, youtube, etc.
 - "unknown" - if you are unsure.
 
-Be liberal with the "distraction" category.
-Be concise.
+Be liberal with the "distraction" category. All videos should be considered distractions.
 `,
         format: "json",
         stream: false,

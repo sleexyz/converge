@@ -83,6 +83,8 @@ export function CustomNode(props: {
     );
   }
 
+  const notes = props.data.notes ?? null;
+
   return (
     <>
       <Handle type="target" position={Position.Left} className={CustomNodeStyles.handle}/>
@@ -91,6 +93,9 @@ export function CustomNode(props: {
         onClick={handleOnClick}
       >
         {title}
+        {notes && <div className="4 text-gray-400 mt-2 text-xs">
+          {notes}
+        </div>}
         {chipItem && (
           <Chip className="top-[-10px] right-[-10px] bg-gray-500 text-white" >
             {chipItem}
