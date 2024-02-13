@@ -9,6 +9,7 @@ import {
 } from "../ToposorterState";
 import { ScreenWatcher } from "../screen_watcher";
 import { useInWindow } from "./mouse_hacks";
+import * as pixelmatch from "pixelmatch";
 
 function useActiveActivity() {
   const activityLog = useContext(ActivityLogContext)!;
@@ -19,40 +20,154 @@ function useActiveActivity() {
   return { row: lastRow, activity };
 }
 
-function WidgetViewInner() {
-  const [_interval, setInterval] = useState<number | null>(null);
-  const [_tick, setTick] = useState(0);
-  const [nature, setNature] = useState<
-    { description: string, activity: string; reason: string } | undefined
-  >(undefined);
-  const [image, setImage] = useState<string | null>(null);
-
+function useLoop({
+  interval,
+  callback,
+}: {
+  interval: number;
+  callback: () => void;
+}) {
   useEffect(() => {
     let cancel = false;
-    // minimum frame interval (ms)
-    const minFrameInterval = 20 * 1000;
+    let lastTimeout: number | null = null;
     async function loop() {
-      const timeNow = new Date().getTime();
+      if (cancel) {
+        return;
+      }
+      const timeStart = new Date().getTime();
       try {
-        const { nature, image } =
-          await ScreenWatcher.instance.start();
-        setNature(nature);
-        setImage(image);
+        await callback();
       } catch (e) {
         console.error(e);
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
-      const timeElapsed = new Date().getTime() - timeNow;
-      await new Promise(resolve => setTimeout(resolve, Math.max(minFrameInterval - timeElapsed, 0)));
+      const timeElapsed = new Date().getTime() - timeStart;
       if (!cancel) {
-        loop();
+        const waitTime = Math.max(interval - timeElapsed, 0);
+        lastTimeout = window.setTimeout(loop, waitTime);
       }
     }
     loop();
     return () => {
       cancel = true;
+      if (lastTimeout) {
+        window.clearTimeout(lastTimeout);
+      }
     };
   }, []);
+}
+
+async function getImageInfo(
+  image: string
+): Promise<{ imageData: Uint8ClampedArray; width: number; height: number }> {
+  const img = await getImage(image);
+  const canvas = document.createElement("canvas");
+  canvas.width = img.width;
+  canvas.height = img.height;
+
+  // Get the context of the canvas
+  const ctx = canvas.getContext("2d")!;
+
+  // Draw the image onto the canvas
+  ctx.drawImage(img, 0, 0);
+
+  // Extract the pixel data from the canvas
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  return {
+    imageData: imageData.data,
+    width: canvas.width,
+    height: canvas.height,
+  };
+}
+
+async function getImage(image: string): Promise<HTMLImageElement> {
+  const img = document.createElement("img");
+  img.src = `data:image/png;base64,${image}`;
+  await new Promise((resolve) => {
+    img.onload = resolve;
+  });
+  return img;
+}
+
+const MIN_NUM_DIFF_PIXELS = 10000;
+
+function WidgetViewInner() {
+  const [_interval, setInterval] = useState<number | null>(null);
+  const [_tick, setTick] = useState(0);
+  const [response, setResponse] = useState<
+    { description: string; activity: string; reason: string } | undefined
+  >(undefined);
+
+  const natureRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (response?.activity) {
+      natureRef.current = response.activity;
+    }
+  }, [response]);
+
+  const imageRef = useRef<string | null>(null);
+  const [image, setImage] = useState<string | null>(null);
+  const [numDiffPixels, setNumDiffPixels] = useState<number | null>(null);
+
+  useLoop({
+    interval: 1000 / 2,
+    callback: async () => {
+      const image = await ScreenWatcher.instance.screenshot();
+
+      let numDiffPixels = null;
+
+      // need to compare the image to the old image to prevent unnecessary re-renders
+      if (imageRef.current != null) {
+        // convert to Uint8Array
+        const [oldImageInfo, newImageInfo] = await Promise.all([
+          getImageInfo(imageRef.current!),
+          getImageInfo(image!),
+        ]);
+
+        numDiffPixels = pixelmatch(
+          oldImageInfo.imageData,
+          newImageInfo.imageData,
+          null,
+          oldImageInfo.width,
+          oldImageInfo.height,
+          { threshold: 0.1 }
+        );
+        setNumDiffPixels(numDiffPixels);
+      }
+      if (numDiffPixels !== null && numDiffPixels > MIN_NUM_DIFF_PIXELS) {
+        setImage(image);
+      }
+
+      if (imageRef.current === null) {
+        setImage(image);
+        setNumDiffPixels(MIN_NUM_DIFF_PIXELS + 1);
+      }
+
+      imageRef.current = image;
+    },
+  });
+
+  const analyzedImageRef = useRef<string | null>(null);
+  const lockRef = useRef<boolean>(false);
+  useEffect(() => {
+    (async () => {
+      if (
+        !lockRef.current &&
+        image &&
+        numDiffPixels !== null &&
+        numDiffPixels > MIN_NUM_DIFF_PIXELS
+      ) {
+        console.log("analyzing image");
+        lockRef.current = true;
+        analyzedImageRef.current = image;
+        setResponse(undefined);
+        const response =
+          await ScreenWatcher.instance.getScreenshotDescriptionOpenAI(image);
+        setResponse(response);
+        lockRef.current = false;
+      }
+    })();
+  }, [image, numDiffPixels]);
 
   // TODO: clear interval after timer ends.
   useEffect(() => {
@@ -93,16 +208,27 @@ function WidgetViewInner() {
       format: ["hours", "minutes"],
     });
 
-    let classes = "transition-opacity duration-150 ease-in-out";
+    let classes = "transition-all duration-500 ease-in-out";
 
-    if (nature?.activity === "distraction") {
+    const style: React.CSSProperties = {
+      backgroundColor: "rgba(0, 0, 0, 0.9)",
+    };
+
+    if (natureRef.current === "distraction") {
       backgroundStyle.backgroundColor = "rgba(0, 0, 0, 0.7)";
       message = (
-        <div className="flex items-center justify-center w-full h-full text-4xl text-white">
+        <div
+          className="flex items-center justify-center w-full h-full text-white"
+          style={{ fontSize: "10rem" }}
+        >
           Hey! Focus!
         </div>
       );
     }
+
+    // if (numDiffPixels !== null && numDiffPixels > MIN_NUM_DIFF_PIXELS) {
+    //   style.backgroundColor = "rgba(255, 0, 0, 0.7)";
+    // }
 
     if (inWindow) {
       classes += " opacity-10";
@@ -113,24 +239,53 @@ function WidgetViewInner() {
     innerElement = (
       <div
         className={[
-          "absolute bottom-0 right-0 flex flex-col items-end justify-end max-w-96 bg-black bg-opacity-80 p-2 rounded-xl m-2 text-white text-xs font-mono",
+          "absolute bottom-0 right-0 flex flex-col items-end justify-end w-96 max-w-96 bg-black bg-opacity-80 p-4 rounded-xl m-2 text-white text-sm font-mono h-[90vh]",
           classes,
         ].join(" ")}
         ref={ref}
+        style={style}
       >
-        <div className="rounded-xl text-xs font-mono">{activity.value}</div>
+        {/* <div className="rounded-xl text-xs font-mono">{activity.value}</div>
         <div className="rounded-xl text-xs mb-10 font-mono">
           {timeSpentString}
+        </div> */}
+        <div className="flex-1">
+          <pre className="text-sm whitespace-pre-wrap mt-2 w-full">
+            numDiffPixels: {numDiffPixels}
+          </pre>
+          {image && (
+            <>
+              <div>last relevant frame:</div>
+              <img
+                src={`data:image/png;base64,${image}`}
+                alt="screenshot"
+                className="rounded-xl mt-2"
+              />
+            </>
+          )}
         </div>
-        <pre className="text-xs whitespace-pre-wrap mt-2">
-          {JSON.stringify(nature, null, 2)}
-        </pre>
-        {image && (
-          <img
-            src={`data:image/png;base64,${image}`}
-            alt="screenshot"
-            className="rounded-xl mt-2"
-          />
+        {analyzedImageRef.current && response && (
+          <div className="flex flex-col flex-1 space-y-8">
+            <pre className="text-xl whitespace-pre-wrap mt-2 w-full flex-1">
+              Verdict: <b>{response.activity}</b>
+            </pre>
+            <pre className="text-sm whitespace-pre-wrap mt-2 w-full flex-1">
+              {response.description}
+            </pre>
+            <pre className="text-sm whitespace-pre-wrap mt-2 w-full flex-1">
+              Reason: {response.reason}
+            </pre>
+            <img
+              src={`data:image/png;base64,${analyzedImageRef.current}`}
+              alt="screenshot"
+              className="rounded-xl mt-2"
+            />
+          </div>
+        )}
+        {(!analyzedImageRef.current || !response) && image && (
+          <div className="flex-1 flex justify-center items-center w-full">
+            <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-purple-500"></div>
+          </div>
         )}
       </div>
     );

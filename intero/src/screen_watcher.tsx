@@ -6,52 +6,21 @@ const openai = new OpenAI({
   dangerouslyAllowBrowser: true,
 });
 
+export interface Response {
+  description: string;
+  activity: string;
+  reason: string;
+}
+
 export class ScreenWatcher {
   static instance = new ScreenWatcher();
 
-  async startFake() {
-    const t1 = performance.now(); // Start timing
-
-    const results = await this.screenshot();
-    const t2 = performance.now();
-    const t3 = performance.now();
-
-    return {
-      image: results[0],
-      response: "",
-      nature: {
-        description: "",
-        activity: "",
-        reason: "",
-      },
-      screenshotTime: t2 - t1,
-      descriptionTime: t3 - t2,
-    };
-  }
-
-  async start() {
-    const t1 = performance.now(); // Start timing
-
-    const results = await this.screenshot();
-    const t2 = performance.now();
-    const nature = await this.getScreenshotDescriptionOpenAI(results[0]);
-    const t3 = performance.now();
-
-    return {
-      image: results[0],
-      response: nature.description,
-      nature,
-      screenshotTime: t2 - t1,
-      descriptionTime: t3 - t2,
-    };
-  }
-
-  private async screenshot(): Promise<string[]> {
+  public async screenshot(): Promise<string> {
     const results = await invoke<string[]>("screenshot");
-    return results;
+    return results[0];
   }
 
-  private async getScreenshotDescriptionOpenAI(screenshot: string): Promise<{
+  public async getScreenshotDescriptionOpenAI(screenshot: string): Promise<{
     description: string;
     activity: string;
     reason: string;
