@@ -105,6 +105,8 @@ function WidgetViewInner() {
     }
   }, [response]);
 
+  const currentImageRef = useRef<string | null>(null);
+
   const imageRef = useRef<string | null>(null);
   const [image, setImage] = useState<string | null>(null);
   const [numDiffPixels, setNumDiffPixels] = useState<number | null>(null);
@@ -114,17 +116,15 @@ function WidgetViewInner() {
     callback: async () => {
       const image = await ScreenWatcher.instance.screenshot();
 
-      let numDiffPixels = null;
-
       // need to compare the image to the old image to prevent unnecessary re-renders
-      if (imageRef.current != null) {
+      if (currentImageRef.current != null) {
         // convert to Uint8Array
         const [oldImageInfo, newImageInfo] = await Promise.all([
-          getImageInfo(imageRef.current!),
+          getImageInfo(currentImageRef.current!),
           getImageInfo(image!),
         ]);
 
-        numDiffPixels = pixelmatch(
+        const numDiffPixels = pixelmatch(
           oldImageInfo.imageData,
           newImageInfo.imageData,
           null,
@@ -133,41 +133,39 @@ function WidgetViewInner() {
           { threshold: 0.1 }
         );
         setNumDiffPixels(numDiffPixels);
-      }
-      if (numDiffPixels !== null && numDiffPixels > MIN_NUM_DIFF_PIXELS) {
-        setImage(image);
-      }
 
-      if (imageRef.current === null) {
+        if (numDiffPixels > MIN_NUM_DIFF_PIXELS) {
+          setImage(image);
+          imageRef.current = image;
+        }
+      } else {
         setImage(image);
-        setNumDiffPixels(MIN_NUM_DIFF_PIXELS + 1);
+        imageRef.current = image;
       }
-
-      imageRef.current = image;
+      currentImageRef.current = image;
     },
   });
 
   const analyzedImageRef = useRef<string | null>(null);
-  const lockRef = useRef<boolean>(false);
+
+  const [lock, setLock] = useState(false);
   useEffect(() => {
     (async () => {
-      if (
-        !lockRef.current &&
-        image &&
-        numDiffPixels !== null &&
-        numDiffPixels > MIN_NUM_DIFF_PIXELS
-      ) {
-        console.log("analyzing image");
-        lockRef.current = true;
+      console.log({lock, image});
+      if (!lock && image && image !== analyzedImageRef.current) {
+        setLock(true);
         analyzedImageRef.current = image;
         setResponse(undefined);
         const response =
           await ScreenWatcher.instance.getScreenshotDescriptionOpenAI(image);
-        setResponse(response);
-        lockRef.current = false;
+        // check if stale
+        if (imageRef.current === image) {
+          setResponse(response);
+        }
+        setLock(false);
       }
     })();
-  }, [image, numDiffPixels]);
+  }, [image, lock]);
 
   // TODO: clear interval after timer ends.
   useEffect(() => {
