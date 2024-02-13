@@ -42,6 +42,7 @@ export function useInWindow(elem: Element | null) {
       mouseCoords.y <= rect.y + rect.height
     ) {
       inWindow = true;
+      console.log("in window");
     }
   }
   return inWindow;

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import "./WidgetView.css";
 // import { XEyes } from "./XEyes";
 import { intervalToDuration, formatDuration } from "date-fns";
@@ -10,6 +10,7 @@ import {
 import { ScreenWatcher } from "../screen_watcher";
 import { useInWindow } from "./mouse_hacks";
 import * as pixelmatch from "pixelmatch";
+import { produce } from "immer";
 
 function useActiveActivity() {
   const activityLog = useContext(ActivityLogContext)!;
@@ -91,9 +92,124 @@ async function getImage(image: string): Promise<HTMLImageElement> {
 
 const MIN_NUM_DIFF_PIXELS = 10000;
 
-function WidgetViewInner() {
+function ActualWidgetView() {
   const [_interval, setInterval] = useState<number | null>(null);
   const [_tick, setTick] = useState(0);
+
+  // TODO: clear interval after timer ends.
+  useEffect(() => {
+    setInterval(
+      window.setInterval(() => {
+        setTick((tick) => tick + 1);
+      }, 1000)
+    );
+
+    return () => {
+      setInterval((interval: number | null) => {
+        if (interval) {
+          window.clearInterval(interval);
+        }
+        return null;
+      });
+    };
+  }, []);
+
+  const { row, activity } = useActiveActivity();
+
+  if (!(activity && row)) {
+    return <></>;
+  }
+
+  const duration = intervalToDuration({
+    start: row.createdAt,
+    end: new Date(),
+  });
+
+  const timeSpentString = formatDuration(duration, {
+    format: ["hours", "minutes"],
+  });
+
+  return (
+    <HideOnHoverDiv className="absolute bottom-0 right-0 flex flex-col items-end justify-end bg-black bg-opacity-80 p-4 rounded-xl m-2 text-white text-sm font-mono space-y-2">
+      <div className="rounded-xl text-xl font-mono">{activity.value}</div>
+      <div className="rounded-xl text-xs font-mono">
+        {timeSpentString}
+      </div>
+    </HideOnHoverDiv>
+  );
+}
+
+type Key = "default" | "distracted" | "aimless";
+
+function orderedEntries<T>(obj: Record<Key, T>): [Key, T][] {
+  return (["distracted", "aimless", "default"] as Key[]).map((key) => [
+    key,
+    obj[key],
+  ]);
+}
+
+function getFirstDefined<T>(obj: Record<Key, T>): T {
+  for (const [_, value] of orderedEntries(obj)) {
+    if (value !== undefined) {
+      return value;
+    }
+  }
+}
+function WidgetViewOuter(props: { children: React.ReactNode }) {
+  const [backgroundStyle, setBackgroundStyle] = useState<
+    Record<string, React.CSSProperties>
+  >({
+    default: {
+      backgroundColor: "rgba(0, 0, 0, 0.0)",
+    },
+  });
+
+  const [message, setMessage] = useState<Record<string, JSX.Element>>({
+    default: <></>,
+  });
+
+  const uiStateContext = useMemo(() => ({
+    setBackgroundStyle,
+    setMessage,
+  }), [setBackgroundStyle, setMessage]);
+
+  return (
+    <div
+      className="w-[100vw] h-[100vh] transition-colors duration-[2000ms] ease-in-out"
+      style={getFirstDefined(backgroundStyle)}
+    >
+      <UIStateContext.Provider value={uiStateContext}>
+        {getFirstDefined(message)}
+        {props.children}
+      </UIStateContext.Provider>
+    </div>
+  );
+}
+
+const UIStateContext = createContext<{
+  setBackgroundStyle: React.Dispatch<React.SetStateAction<Record<string, React.CSSProperties>>>; 
+  setMessage: React.Dispatch<React.SetStateAction<Record<string, JSX.Element>>>;
+} | null>(null);
+
+
+function HideOnHoverDiv(props: React.HTMLProps<HTMLDivElement>) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inWindow = useInWindow(ref.current);
+  return (
+    <div
+      ref={ref}
+      {...props}
+      className={[
+        "transition-opacity duration-500 ease-in-out",
+        inWindow ? "opacity-0" : "opacity-100",
+        props.className,
+      ].join(" ")}
+    />
+  );
+}
+
+function DebugView() {
+  const { setBackgroundStyle, setMessage } = useContext(UIStateContext)!;
   const [response, setResponse] = useState<
     { description: string; activity: string; reason: string } | undefined
   >(undefined);
@@ -164,12 +280,15 @@ function WidgetViewInner() {
         try {
           abortControllerRef.current = new AbortController();
           const response =
-            await ScreenWatcher.instance.getScreenshotDescriptionOpenAI(image, abortControllerRef.current);
+            await ScreenWatcher.instance.getScreenshotDescriptionOpenAI(
+              image,
+              abortControllerRef.current
+            );
           // check if stale
           if (imageRef.current === image) {
             setResponse(response);
           }
-        } catch(e) {
+        } catch (e) {
           console.error(e);
         } finally {
           setLock(false);
@@ -178,152 +297,134 @@ function WidgetViewInner() {
     })();
   }, [image, lock]);
 
-  // TODO: clear interval after timer ends.
-  useEffect(() => {
-    setInterval(
-      window.setInterval(() => {
-        setTick((tick) => tick + 1);
-      }, 1000)
-    );
-
-    return () => {
-      setInterval((interval: number | null) => {
-        if (interval) {
-          window.clearInterval(interval);
-        }
-        return null;
-      });
-    };
-  }, []);
-
-  const { row, activity } = useActiveActivity();
-
-  let innerElement = <></>;
-  let message = <></>;
-  const backgroundStyle: React.CSSProperties = {
-    backgroundColor: "rgba(0, 0, 0, 0.0)",
+  const style: React.CSSProperties = {
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
   };
 
-  const ref = useRef<any>();
-
-  const inWindow = useInWindow(ref.current);
-
-  if (activity && row) {
-    const duration = intervalToDuration({
-      start: row.createdAt,
-      end: new Date(),
-    });
-    const timeSpentString = formatDuration(duration, {
-      format: ["hours", "minutes"],
-    });
-
-    let classes = "transition-all duration-500 ease-in-out";
-
-    const style: React.CSSProperties = {
-      backgroundColor: "rgba(0, 0, 0, 0.9)",
-    };
-
-    // if (natureRef.current === "distraction") {
+  useEffect(() => {
     if (response?.activity === "distraction") {
-      backgroundStyle.backgroundColor = "rgba(0, 0, 0, 0.7)";
-      message = (
-        <div
-          className="flex items-center justify-center w-full h-full text-white"
-          style={{ fontSize: "10rem" }}
-        >
-          Hey! Focus!
-        </div>
+      setBackgroundStyle(
+        produce((draft) => {
+          draft.distracted = { backgroundColor: "rgba(0, 0, 0, 0.7)" };
+        })
+      );
+
+      setMessage(
+        produce((draft) => {
+          draft.distracted = (
+            <div
+              className="flex items-center justify-center w-full h-full text-white"
+              style={{ fontSize: "10rem" }}
+            >
+              Hey! Focus!
+            </div>
+          );
+        })
+      );
+    } else {
+      setBackgroundStyle(
+        produce((draft) => {
+          delete draft.distracted;
+        })
+      );
+      setMessage(
+        produce((draft) => {
+          delete draft.distracted;
+        })
       );
     }
+  }, [response?.activity]);
 
-    const numDiffPixelsStyle: React.CSSProperties = {};
-    if (numDiffPixels !== null && numDiffPixels > MIN_NUM_DIFF_PIXELS) {
-      numDiffPixelsStyle.backgroundColor = "rgba(255, 255, 255, 0.5)";
-    }
+  const numDiffPixelsStyle: React.CSSProperties = {};
+  if (numDiffPixels !== null && numDiffPixels > MIN_NUM_DIFF_PIXELS) {
+    numDiffPixelsStyle.backgroundColor = "rgba(255, 255, 255, 0.5)";
+  }
 
-    if (inWindow) {
-      classes += " opacity-10";
-    } else {
-      classes += " opacity-100";
-    }
+  const { activity, row } = useActiveActivity();
+  useEffect(() => {
+    if (!(activity && row)) {
+      setBackgroundStyle(
+        produce((draft) => {
+          draft.aimless = { backgroundColor: "rgba(255, 255, 255, 0.7)" };
+        })
+      );
 
-    innerElement = (
-      <div
-        className={[
-          "absolute bottom-0 right-0 flex flex-col items-end justify-end w-96 max-w-96 bg-black bg-opacity-80 p-4 rounded-xl m-2 text-white text-sm font-mono h-[90vh]",
-          classes,
-        ].join(" ")}
-        ref={ref}
-        style={style}
-      >
-        {/* <div className="rounded-xl text-xs font-mono">{activity.value}</div>
-        <div className="rounded-xl text-xs mb-10 font-mono">
-          {timeSpentString}
-        </div> */}
-        <div className="flex-1">
-          <pre className="text-sm whitespace-pre-wrap mt-2 w-full">
-            numDiffPixels:{" "}
-            <span
-              className="transition-all duration-500 ease-in-out"
-              style={numDiffPixelsStyle}
+      setMessage(
+        produce((draft) => {
+          draft.aimless = (
+            <div
+              className="flex items-center justify-center w-full h-full text-white"
+              style={{ fontSize: "10rem" }}
             >
-              {numDiffPixels}
-            </span>
-          </pre>
-          {image && (
-            <>
-              <div>last relevant frame:</div>
-              <img
-                src={`data:image/png;base64,${image}`}
-                alt="screenshot"
-                className="rounded-xl mt-2"
-              />
-            </>
-          )}
-        </div>
-        {analyzedImageRef.current && response && (
-          <div className="flex flex-col flex-1 space-y-8">
-            <pre className="text-xl whitespace-pre-wrap mt-2 w-full flex-1">
-              Verdict: <b>{response.activity}</b>
-            </pre>
-            <pre className="text-sm whitespace-pre-wrap mt-2 w-full flex-1">
-              {response.description}
-            </pre>
-            <pre className="text-sm whitespace-pre-wrap mt-2 w-full flex-1">
-              Reason: {response.reason}
-            </pre>
+              What's next?
+            </div>
+          );
+        })
+      );
+    } else {
+      setBackgroundStyle(
+        produce((draft) => {
+          delete draft.aimless;
+        })
+      );
+      setMessage(
+        produce((draft) => {
+          delete draft.aimless;
+        })
+      );
+    }
+  }, [activity && row]);
+
+  return (
+    <HideOnHoverDiv
+      className="absolute bottom-0 left-0 flex flex-col items-end justify-end w-96 max-w-96 bg-black bg-opacity-80 p-4 rounded-xl m-2 text-white text-sm font-mono h-[90vh]"
+      style={style}
+    >
+      <div className="flex-1">
+        <pre className="text-sm whitespace-pre-wrap mt-2 w-full">
+          numDiffPixels:{" "}
+          <span
+            className="transition-all duration-500 ease-in-out"
+            style={numDiffPixelsStyle}
+          >
+            {numDiffPixels}
+          </span>
+        </pre>
+        {image && (
+          <>
+            <div>last relevant frame:</div>
             <img
-              src={`data:image/png;base64,${analyzedImageRef.current}`}
+              src={`data:image/png;base64,${image}`}
               alt="screenshot"
               className="rounded-xl mt-2"
             />
-          </div>
-        )}
-        {(!analyzedImageRef.current || !response) && image && (
-          <div className="flex-1 flex justify-center items-center w-full">
-            <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-purple-500"></div>
-          </div>
+          </>
         )}
       </div>
-    );
-  } else {
-    message = (
-      <div className="flex items-center justify-center w-full h-full text-4xl">
-        What's next?
-      </div>
-    );
-    backgroundStyle.backgroundColor = "rgba(255, 255, 255, 0.5)";
-  }
-
-  return (
-    // <XEyes />
-    <div
-      className="w-[100vw] h-[100vh] transition-colors duration-[2000ms] ease-in-out"
-      style={backgroundStyle}
-    >
-      {message}
-      {innerElement}
-    </div>
+      {analyzedImageRef.current && response && (
+        <div className="flex flex-col flex-1 space-y-8">
+          <pre className="text-xl whitespace-pre-wrap mt-2 w-full flex-1">
+            Verdict: <b>{response.activity}</b>
+          </pre>
+          <pre className="text-sm whitespace-pre-wrap mt-2 w-full flex-1">
+            {response.description}
+          </pre>
+          <pre className="text-sm whitespace-pre-wrap mt-2 w-full flex-1">
+            Reason: {response.reason}
+          </pre>
+          <img
+            src={`data:image/png;base64,${analyzedImageRef.current}`}
+            alt="screenshot"
+            className="rounded-xl mt-2"
+          />
+        </div>
+      )}
+      {(!analyzedImageRef.current || !response) && image && (
+        <div className="flex-1 flex justify-center items-center w-full">
+          <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-purple-500"></div>
+        </div>
+      )}
+    </HideOnHoverDiv>
   );
 }
 
@@ -331,7 +432,10 @@ export function WidgetView() {
   return (
     <ActivityLogProvider>
       <ToposorterStateProvider>
-        <WidgetViewInner />
+        <WidgetViewOuter>
+          <DebugView />
+          <ActualWidgetView />
+        </WidgetViewOuter>
       </ToposorterStateProvider>
     </ActivityLogProvider>
   );
