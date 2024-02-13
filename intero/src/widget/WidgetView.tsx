@@ -101,7 +101,7 @@ async function getImage(image: string): Promise<HTMLImageElement> {
   return img;
 }
 
-const MIN_NUM_DIFF_PIXELS = 10000;
+const MIN_NUM_DIFF_PIXELS = 20000;
 
 function ActualWidgetView() {
   const [_interval, setInterval] = useState<number | null>(null);
@@ -141,7 +141,7 @@ function ActualWidgetView() {
   });
 
   return (
-    <HideOnHoverDiv className="absolute bottom-0 right-0 flex flex-col items-end justify-end bg-black bg-opacity-80 p-4 rounded-xl m-2 text-white text-sm font-mono space-y-2">
+    <HideOnHoverDiv className="absolute bottom-[50vh] right-0 flex flex-col items-end justify-end bg-black bg-opacity-80 p-4 rounded-xl m-2 text-white text-xs font-mono space-y-2">
       <div className="rounded-xl text-xl font-mono">{activity.value}</div>
       <div className="rounded-xl text-xs font-mono">{timeSpentString}</div>
     </HideOnHoverDiv>
@@ -392,11 +392,11 @@ function DebugView() {
 
   return (
     <HideOnHoverDiv
-      className="absolute bottom-0 left-0 flex flex-col items-end justify-end w-96 max-w-96 bg-black bg-opacity-80 p-4 rounded-xl m-2 text-white text-sm font-mono h-[90vh]"
+      className="absolute bottom-0 left-0 flex flex-col items-end justify-end w-96 max-w-96 bg-black bg-opacity-80 p-4 rounded-xl m-2 text-white text-xs font-mono h-[90vh]"
       style={style}
     >
       <div className="flex-1">
-        <pre className="text-sm whitespace-pre-wrap mt-2 w-full">
+        <pre className="text-xs whitespace-pre-wrap mt-2 w-full">
           numDiffPixels:{" "}
           <span
             className="transition-all duration-500 ease-in-out"
@@ -421,10 +421,10 @@ function DebugView() {
           <pre className="text-xl whitespace-pre-wrap mt-2 w-full flex-1">
             Verdict: <b>{response.activity}</b>
           </pre>
-          <pre className="text-sm whitespace-pre-wrap mt-2 w-full flex-1">
+          <pre className="text-xs whitespace-pre-wrap mt-2 w-full flex-1">
             {response.description}
           </pre>
-          <pre className="text-sm whitespace-pre-wrap mt-2 w-full flex-1">
+          <pre className="text-xs whitespace-pre-wrap mt-2 w-full flex-1">
             Reason: {response.reason}
           </pre>
           <img

@@ -101,17 +101,16 @@ export class ScreenWatcher {
         model: "llava",
         options: {
           temperature: 0,
-          // max_tokens: 1000,
         },
         system:
           "You are an AI assistant tasked with analyzing the user's screen. You must respond in valid JSON. Use the following typescript type: { description: string; activity: string; reason: string; }",
         prompt: `Describe the nature of the activity in the screen with one of the following categories:
-- "distraction" - includes social media, news, youtube, etc.
 - "work" - only productive work-related activities.
+- "distraction" - includes social media, news, youtube, etc.
 - "unknown" - if you are unsure.
 
-Social media, news, youtube, etc. are considered distractions.
-Your user is a software engineer working on AI applications.
+Be liberal with the "distraction" category.
+Be concise.
 `,
         format: "json",
         stream: false,
