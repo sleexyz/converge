@@ -49,6 +49,9 @@ export default defineConfig(function () { return __awaiter(void 0, void 0, void 
                 server: {
                     port: 1420,
                     strictPort: true,
+                    hmr: {
+                        overlay: false,
+                    },
                 }
             })];
     });

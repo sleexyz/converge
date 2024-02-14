@@ -75,7 +75,7 @@ export function applyPreferencesFilter(
 // to allow cascading.
 function shouldShowNode(preferences: Preferences, node: TNode): boolean {
   if (preferences.focus) {
-    if (node.id !== preferences.focus && !node.ancestors().has(preferences.focus)) {
+    if (node.id !== preferences.focus && !node.ancestorIds().has(preferences.focus)) {
       return false;
     }
   }

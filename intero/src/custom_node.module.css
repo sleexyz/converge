@@ -1,4 +1,7 @@
 
+div :has(> .node) {
+    transition: transform 200ms ease-in-out;
+}
 .node {
     @apply text-gray-500 bg-white rounded-2xl py-2 px-4 box-border shadow-md;
     @apply font-mono;
@@ -22,7 +25,6 @@
 .node.selected:not(.problem) {
     @apply text-pink-500;
 }
-
 
 .project {
     @apply py-16;

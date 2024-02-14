@@ -18,10 +18,7 @@ import { ScreenWatcher } from "../screen_watcher";
 import { useInWindow } from "./mouse_hacks";
 import * as pixelmatch from "pixelmatch";
 import { produce } from "immer";
-import {
-  PreferencesContext,
-  PreferencesProvider,
-} from "../preference_state";
+import { PreferencesContext, PreferencesProvider } from "../preference_state";
 
 function useActiveActivity() {
   const activityLog = useContext(ActivityLogContext)!;
@@ -140,9 +137,30 @@ function ActualWidgetView() {
     format: ["hours", "minutes"],
   });
 
+  const ancestorsString = [...activity.ancestors()].map((x, i) => (
+    <div>
+      <span>{x.value}</span>
+    </div>
+  ));
+
   return (
     <HideOnHoverDiv className="absolute bottom-[50vh] right-0 flex flex-col items-end justify-end bg-black bg-opacity-80 p-4 rounded-xl m-2 text-white text-xs font-mono space-y-2">
-      <div className="rounded-xl text-xl font-mono">{activity.value}</div>
+      <div className="whitespace-pre-wrap text-gray-200 text-left w-full flex flex-col">
+        {ancestorsString && (
+          <>
+            {ancestorsString}
+            <br />
+          </>
+        )}
+      </div>
+      <div className="rounded-xl text-xl font-mono w-full">
+        {activity.value}
+      </div>
+      {activity.notes && (
+        <div className="rounded-xl text-xs font-mono w-full whitespace-pre-wrap">
+          {activity.notes}
+        </div>
+      )}
       <div className="rounded-xl text-xs font-mono">{timeSpentString}</div>
     </HideOnHoverDiv>
   );
@@ -151,10 +169,7 @@ function ActualWidgetView() {
 type Key = "distracted" | "aimless";
 
 function orderedEntries<T>(obj: Record<Key, T>): [Key, T][] {
-  return (["distracted", "aimless"] as Key[]).map((key) => [
-    key,
-    obj[key],
-  ]);
+  return (["distracted", "aimless"] as Key[]).map((key) => [key, obj[key]]);
 }
 
 function getFirstDefined<T>(obj: Record<Key, T>, defaultValue: T): T {

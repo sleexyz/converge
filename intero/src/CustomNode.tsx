@@ -1,18 +1,17 @@
 import { useContext } from "react";
 import { UIStateContext } from "./ui_state";
 import { Handle, Position } from "reactflow";
-import { TNodeData, ToposorterStateManagerContext } from "./ToposorterState";
+import { TNode, ToposorterStateManagerContext } from "./ToposorterState";
 import CustomNodeStyles from "./custom_node.module.css";
 import { SelectionManagerContext, useIsRelevantNode } from "./Selection";
 
 export function CustomNode(props: {
-  data: TNodeData;
+  data: TNode;
   id: string;
   selected: boolean;
 }) {
-
   let isRelevant = useIsRelevantNode(props.id);
-  
+
   let classes = `${CustomNodeStyles.node}`;
 
   if (props.data.status === "done") {
@@ -73,31 +72,26 @@ export function CustomNode(props: {
   }
 
   let chipItem: React.ReactNode = null;
-  if  (props.data.status === "active") {
-    chipItem = (
-      <ActiveSvg />
-    );
+  if (props.data.status === "active") {
+    chipItem = <ActiveSvg />;
   } else if (props.data.pinned) {
-    chipItem = (
-      <PinnedSvg/>
-    );
+    chipItem = <PinnedSvg />;
   }
 
   const notes = props.data.notes ?? null;
 
   return (
     <>
-      <Handle type="target" position={Position.Left} className={CustomNodeStyles.handle}/>
-      <div
-        className={`${classes}`}
-        onClick={handleOnClick}
-      >
+      <Handle
+        type="target"
+        position={Position.Left}
+        className={CustomNodeStyles.handle}
+      />
+      <div className={`${classes}`} onClick={handleOnClick}>
         {title}
-        {notes && <div className="4 text-gray-400 mt-2 text-xs">
-          {notes}
-        </div>}
+        {notes && <div className="text-gray-400 mt-2 text-xs">{notes}</div>}
         {chipItem && (
-          <Chip className="top-[-10px] right-[-10px] bg-gray-500 text-white" >
+          <Chip className="top-[-10px] right-[-10px] bg-gray-500 text-white">
             {chipItem}
           </Chip>
         )}
@@ -105,14 +99,23 @@ export function CustomNode(props: {
           {priorityText}
         </div>
       </div>
-      <Handle type="source" position={Position.Right} className={CustomNodeStyles.handle}/>
+      <Handle
+        type="source"
+        position={Position.Right}
+        className={CustomNodeStyles.handle}
+      />
     </>
   );
 }
 
 function Chip(props: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={["font-mono absolute font-bold rounded-full text-x h-6 w-6 flex justify-center items-center z-50", props.className].join(' ')}>
+    <div
+      className={[
+        "font-mono absolute font-bold rounded-full text-x h-6 w-6 flex justify-center items-center z-50",
+        props.className,
+      ].join(" ")}
+    >
       {props.children}
     </div>
   );
@@ -138,7 +141,5 @@ function ActiveSvg() {
 }
 
 function PinnedSvg() {
-  return (
-    <div>📌</div>
-  );
+  return <div>📌</div>;
 }

@@ -44,16 +44,21 @@ export class TNode {
   parents() {
     return this.data.__parents ?? [];
   }
-  ancestors = memoizeFn(() => {
+  ancestorIds = memoizeFn(() => {
     const out = new Set<Id>();
     for (let parent of this.parents()) {
       out.add(parent);
       for (let ancestor of this.ctx.getNode(parent).ancestors()) {
-        out.add(ancestor);
+        out.add(ancestor.id);
       }
     }
-    return out;
+    return out
   });
+
+  ancestors() {
+    return [...this.ancestorIds()].reverse().map((x) => this.ctx.getNode(x));
+  }
+
   get pinned() {
     return this.data.pinned;
   }
@@ -247,7 +252,7 @@ export class ToposorterState {
     return relevant
   }
 
-  collectAncestors(id: Id, set: Set<Id>) {
+  private collectAncestors(id: Id, set: Set<Id>) {
     const node = this.getNode(id);
     if (!node) {
       return;
