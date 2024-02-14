@@ -137,8 +137,8 @@ function ActualWidgetView() {
     format: ["hours", "minutes"],
   });
 
-  const ancestorsString = [...activity.ancestors()].map((x, i) => (
-    <div>
+  const ancestorsElem = [...activity.ancestors()].map((x, i) => (
+    <div> <span>{" ".repeat(i)}{i > 0 &&"└ "}</span>
       <span>{x.value}</span>
     </div>
   ));
@@ -146,9 +146,9 @@ function ActualWidgetView() {
   return (
     <HideOnHoverDiv className="absolute bottom-[50vh] right-0 flex flex-col items-end justify-end bg-black bg-opacity-80 p-4 rounded-xl m-2 text-white text-xs font-mono space-y-2">
       <div className="whitespace-pre-wrap text-gray-200 text-left w-full flex flex-col">
-        {ancestorsString && (
+        {ancestorsElem && (
           <>
-            {ancestorsString}
+            {ancestorsElem}
             <br />
           </>
         )}
