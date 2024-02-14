@@ -17,6 +17,7 @@ export interface TNodeData {
   priority?: number;
   notes?: string;
   pinned?: boolean;
+  estimatedTime?: number; // in minutes
 
   /**  @deprecated **/
   children: Id[];
@@ -79,6 +80,9 @@ export class TNode {
   }
   get type() {
     return this.data.type;
+  }
+  get estimatedTime() {
+    return this.data.estimatedTime;
   }
   maxVec() {
     return this.data.__maxVec;
@@ -509,6 +513,12 @@ export class ToposorterStateManager {
   setNotes = this.bindAction((id: Id, notes: string) => {
     return produce((draft: Draft<ToposorterStateData>) => {
       draft.nodes[id].notes = notes;
+    });
+  });
+
+  setEstimatedTime = this.bindAction((id: Id, estimatedTime: number) => {
+    return produce((draft: Draft<ToposorterStateData>) => {
+      draft.nodes[id].estimatedTime = estimatedTime;
     });
   });
 }

@@ -1,9 +1,15 @@
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
-import { Id, ToposorterStateManagerContext, TNodeData } from "./ToposorterState";
+import {
+  Id,
+  ToposorterStateManagerContext,
+  TNodeData,
+  ToposorterStateContext,
+} from "./ToposorterState";
 import ReactTextareaAutosize from "react-textarea-autosize";
 import { formatDistanceToNow } from "date-fns";
 import { useSelectedNode } from "./Selection";
 import { UIStateContext } from "./ui_state";
+import "./selection_pane.css";
 
 export function SelectionPane() {
   const [selectedNode] = useSelectedNode();
@@ -53,7 +59,9 @@ function SelectionEditor({ tnode, id }: { tnode: TNodeData; id: Id }) {
     uiState.bindTitleRef(titleRef);
   }, [titleRef]);
 
-  const formattedDate = formatDistanceToNow(tnode.createdAt, { addSuffix: true });
+  const formattedDate = formatDistanceToNow(tnode.createdAt, {
+    addSuffix: true,
+  });
 
   return (
     <>
@@ -72,10 +80,25 @@ function SelectionEditor({ tnode, id }: { tnode: TNodeData; id: Id }) {
           placeholder="Notes"
           className="text-gray-500 text-left box-content text-lg rounded-md p-2 m-0 border-0 outline-none resize-none"
         />
+
+        <span className="px-2 text-sm py-4 text-gray-500">
+          Created {formattedDate}
+        </span>
+
+        <hr />
+
+        <div className="p-2 flex justify-between items-center text-sm">
+          <label className="text-gray-500">Estimated time (min)</label>
+          <input
+            className="text-gray-500 bg-white border border-gray-300 rounded-md p-2 m-0 min-w-0"
+            type="number"
+            value={tnode.estimatedTime ?? 0}
+            onChange={(e) => {
+              stateManager.setEstimatedTime(id, parseInt(e.target.value));
+            }}
+          ></input>
+        </div>
       </div>
-      <span className="px-2 text-sm py-4 text-gray-500">
-        Created {formattedDate}
-      </span>
     </>
   );
 }

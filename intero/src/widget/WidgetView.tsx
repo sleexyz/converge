@@ -138,7 +138,7 @@ function ActualWidgetView() {
   });
 
   const ancestorsElem = [...activity.ancestors()].map((x, i) => (
-    <div> <span>{" ".repeat(i)}{i > 0 &&"└ "}</span>
+    <div><span>{" ".repeat(i)}{i > 0 &&"└ "}</span>
       <span>{x.value}</span>
     </div>
   ));

@@ -128,7 +128,6 @@ export function CanvasController(props: { children: React.ReactNode }) {
         className: CustomNodeStyles.edge,
       });
     }
-    console.log("initialNodes", initialNodes);
     return [initialNodes, initialEdges];
   }, [tNodes, preferences]);
 

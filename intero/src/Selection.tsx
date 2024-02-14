@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useOnSelectionChange, useStoreApi } from "reactflow";
@@ -22,8 +23,8 @@ export class SelectionManager {
 export function SelectionProvider({ children }: { children: React.ReactNode }) {
   const toposorterStateManager = useContext(ToposorterStateManagerContext)!;
 
-  const [selectedNode, _setSelectedNode, selectedNodeRef] =
-    useRefState<TNodeRow | null>(() => null);
+  const [selectedNode, _setSelectedNode] =
+    useState<Id| null>(() => null);
 
   const [relevantNodes, setRelevantNodes] =
     useState<Set<Id> | null>(() => null);
@@ -42,11 +43,7 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
         _setSelectedNode(null);
         return queue.waitOnConsume();
       }
-      const row = {
-        data: toposorterStateManager.state().getNode(id),
-        id,
-      };
-      _setSelectedNode(row);
+      _setSelectedNode(id);
 
       // console.log("selected node", row);
       const { addSelectedNodes } = store.getState();
@@ -65,12 +62,24 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
     },
   });
 
+  const toposorterState = useContext(ToposorterStateManagerContext)!;
+  let nodeRow: TNodeRow | null = null;
+  if (selectedNode) { 
+    nodeRow = {
+      id: selectedNode,
+      data: toposorterState.state().getNode(selectedNode)
+    };
+  }
+
+  const selectedNodeRef = useRef<TNodeRow | null>(nodeRow);
+
   const ret = useMemo(() => {
-    return [selectedNode, setSelectedNode] as [
+    selectedNodeRef.current = nodeRow;
+    return [nodeRow, setSelectedNode] as [
       TNodeRow|null,
       (id: Id | null) => Promise<void>
     ];
-  }, [selectedNode, setSelectedNode]);
+  }, [nodeRow, setSelectedNode]);
 
   const selectionManager = useMemo(() => {
     return new SelectionManager(setSelectedNode, setRelevantNodes)
