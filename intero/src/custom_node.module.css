@@ -1,6 +1,8 @@
 
 div :has(> .node) {
-    transition: transform 200ms ease-in-out;
+    /* TODO: we need to unapply this when we're grabbing */
+
+    /* transition: transform 200ms ease-in-out; */
 }
 .node {
     @apply text-gray-500 bg-white rounded-2xl py-2 px-4 box-border shadow-md;
