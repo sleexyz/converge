@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useLocalStorageState, useMakeStateAsync } from "./state";
 import { produce } from "immer";
 import * as React from "react";
-import { Id, TNode, getPriority, priorityToPoints } from "./ToposorterState";
+import { Id, TNode, getPriority } from "./ToposorterState";
 
 export interface HideObj extends HideBools {
   // minimum priority to hide
@@ -14,16 +14,24 @@ export interface HideBools {
   done?: boolean;
   task?: boolean;
   goal?: boolean;
+}
 
+export interface BoolOptionsObj {
+  // whether to show the debug panel
   debug?: boolean;
+
+  // whether to enable screen watching
+  watch?: boolean;
 }
 
 export interface Preferences {
   focus?: Id;
   hide: HideObj;
+  boolOptions: BoolOptionsObj;
 }
 export const PreferencesContext = React.createContext<Preferences>({
   hide: {},
+  boolOptions: {},
 });
 
 export const PreferencesManagerContext =
@@ -35,6 +43,17 @@ export class PreferencesManager {
       action: React.SetStateAction<Preferences>
     ) => Promise<void>
   ) {}
+
+  async setBoolOption<K extends keyof BoolOptionsObj>(
+    key: K,
+    value: BoolOptionsObj[K] | undefined
+  ) {
+    await this.setPreferences(
+      produce((draft) => {
+        draft.boolOptions[key] = value;
+      })
+    );
+  }
 
   async setFilter<K extends keyof HideObj>(
     key: K,
@@ -98,6 +117,13 @@ function shouldShowNode(preferences: Preferences, node: TNode): boolean {
   return true;
 }
 
+const defaultPreferences: Preferences = {
+  hide: {
+  },
+  boolOptions: {
+  },
+};
+
 export function PreferencesProvider({
   children,
 }: {
@@ -105,11 +131,11 @@ export function PreferencesProvider({
 }) {
   const [_preferences, _setPreferences] = useLocalStorageState<Preferences>(
     "preferences",
-    {
-      hide: {
-        debug: true,
-      },
-    }
+    defaultPreferences,
+    state => ({
+      ...defaultPreferences,
+      ...state,
+    })
   );
   const [preferences, setPreferences] = useMakeStateAsync([
     _preferences,

@@ -43,9 +43,6 @@ export function useLocalStorageState<T>(
 
   React.useEffect(() => {
     localStorage.setItem(key, JSON.stringify(state, (key, value) => {
-      // if (key === "createdAt") {
-      //   return value.toISOString();
-      // }
       if (key.startsWith("__")) {
         return undefined;
       }
@@ -60,6 +57,9 @@ function parseJSON<T>(json: string): T {
   try {
     return JSON.parse(json, (key, value) => {
       if (key === "createdAt") {
+        return new Date(value);
+      }
+      if (key === "endTime") {
         return new Date(value);
       }
       return value;

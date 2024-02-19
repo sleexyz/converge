@@ -15,7 +15,7 @@ import { ActionManager, ActionManagerContext } from "./action_manager";
 import { BaseDirectory, createDir, writeBinaryFile } from "@tauri-apps/api/fs";
 import { appDataDir } from "@tauri-apps/api/path";
 import { SearchContainer, SearchInput } from "./Box";
-import { HideObj, PreferencesManager, PreferencesManagerContext } from "./preference_state";
+import { BoolOptionsObj, HideObj, PreferencesManager, PreferencesManagerContext } from "./preference_state";
 
 class ArgType<_T> {
   static TNode = new ArgType<TNodeRow>();
@@ -232,6 +232,26 @@ const commands = Object.fromEntries(
         } else {
           await preferencesManager.setFilter(args.object as keyof HideObj, false);
         }
+        canvasManager.layoutNodes();
+      },
+    }),
+    new Command({
+      command: "enable",
+      argsShape: {
+        object: ArgType.string,
+      },
+      async runCommand(args, { preferencesManager, canvasManager }) {
+        await preferencesManager.setBoolOption(args.object as keyof BoolOptionsObj, true);
+        canvasManager.layoutNodes();
+      },
+    }),
+    new Command({
+      command: "disable",
+      argsShape: {
+        object: ArgType.string,
+      },
+      async runCommand(args, { preferencesManager, canvasManager }) {
+        await preferencesManager.setBoolOption(args.object as keyof BoolOptionsObj, false);
         canvasManager.layoutNodes();
       },
     }),

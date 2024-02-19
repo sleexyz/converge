@@ -49,8 +49,8 @@ export class TNode {
     const out = new Set<Id>();
     for (let parent of this.parents()) {
       out.add(parent);
-      for (let ancestor of this.ctx.getNode(parent).ancestors()) {
-        out.add(ancestor.id);
+      for (let ancestorId of this.ctx.getNode(parent).ancestorIds()) {
+        out.add(ancestorId);
       }
     }
     return out

@@ -7,11 +7,16 @@ import {
   useState,
 } from "react";
 import "./WidgetView.css";
-// import { XEyes } from "./XEyes";
-import { intervalToDuration, formatDuration } from "date-fns";
-import { ActivityLogContext, ActivityLogProvider } from "../activity";
 import {
+  ActivityLogContext,
+  ActivityLogProvider,
+  LogRow,
+  useSyncActivityState,
+} from "../activity";
+import {
+  TNode,
   ToposorterStateContext,
+  ToposorterStateManagerContext,
   ToposorterStateProvider,
 } from "../ToposorterState";
 import { ScreenWatcher } from "../screen_watcher";
@@ -19,6 +24,7 @@ import { useInWindow } from "./mouse_hacks";
 import * as pixelmatch from "pixelmatch";
 import { produce } from "immer";
 import { PreferencesContext, PreferencesProvider } from "../preference_state";
+
 
 function useActiveActivity() {
   const activityLog = useContext(ActivityLogContext)!;
@@ -98,11 +104,19 @@ async function getImage(image: string): Promise<HTMLImageElement> {
   return img;
 }
 
-const MIN_NUM_DIFF_PIXELS = 20000;
+const MIN_NUM_DIFF_PIXELS = 10000;
 
-function ActualWidgetView() {
+function ActualWidgetViewOuter() {
+  const { row, activity } = useActiveActivity();
+  useSyncActivityState();
+  return (
+    <>{row && activity && <ActualWidgetView row={row} activity={activity} />}</>
+  );
+}
+
+function ActualWidgetView({ activity, row }: { activity: TNode; row: LogRow }) {
   const [_interval, setInterval] = useState<number | null>(null);
-  const [_tick, setTick] = useState(0);
+  const [, setTick] = useState(0);
 
   // TODO: clear interval after timer ends.
   useEffect(() => {
@@ -122,29 +136,46 @@ function ActualWidgetView() {
     };
   }, []);
 
-  const { row, activity } = useActiveActivity();
-
-  if (!(activity && row)) {
-    return <></>;
-  }
-
-  const duration = intervalToDuration({
-    start: row.createdAt,
-    end: new Date(),
-  });
-
-  const timeSpentString = formatDuration(duration, {
-    format: ["hours", "minutes"],
-  });
+  // const timeSpentString = formatDuration(row.endTime!.getTime() - row.createdAt.getTime());
 
   const ancestorsElem = [...activity.ancestors()].map((x, i) => (
-    <div><span>{" ".repeat(i)}{i > 0 &&"└ "}</span>
+    <div key={x.id}>
+      <span>
+        {" ".repeat(i)}
+        {i > 0 && "└ "}
+      </span>
       <span>{x.value}</span>
     </div>
   ));
 
+  const toposorterStateManager = useContext(ToposorterStateManagerContext)!;
+
+  // throw Timer logic here
+  useEffect(() => {
+    if (!row.endTime) {
+      return;
+    }
+
+    async function cb() {
+      // stop the activiton
+      await toposorterStateManager.setStatus(row.activityId, "unset");
+    }
+
+    const timeLeft = row.endTime.getTime() - Date.now();
+    const timeout = window.setTimeout(cb, timeLeft);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [row, activity]);
+
+  // const timeSpentString = formatDuration(new Date().getTime() - row.createdAt.getTime());
+  const timeLeftString = formatDuration(row.endTime!.getTime() - new Date().getTime());
+
+  // const timerDuration = formatDuration(row.endTime!.getTime() -  row.createdAt.getTime());
+
   return (
-    <HideOnHoverDiv className="absolute bottom-[50vh] right-0 flex flex-col items-end justify-end bg-black bg-opacity-80 p-4 rounded-xl m-2 text-white text-xs font-mono space-y-2">
+    <HideOnHoverDiv className="absolute bottom-[50vh] right-0 flex flex-col items-end justify-end bg-black bg-opacity-80 p-4 rounded-xl m-2 text-white text-sm font-mono space-y-2 max-w-72">
       <div className="whitespace-pre-wrap text-gray-200 text-left w-full flex flex-col">
         {ancestorsElem && (
           <>
@@ -157,11 +188,13 @@ function ActualWidgetView() {
         {activity.value}
       </div>
       {activity.notes && (
-        <div className="rounded-xl text-xs font-mono w-full whitespace-pre-wrap">
+        <div className="rounded-xl text-sm font-mono w-full whitespace-pre-wrap">
           {activity.notes}
         </div>
       )}
-      <div className="rounded-xl text-xs font-mono">{timeSpentString}</div>
+      {/* {timerDuration} */}
+      {/* <div className="rounded-xl text-sm font-mono">Elapsed: {timeSpentString}</div> */}
+      <div className="rounded-xl text-sm font-mono">{timeLeftString}</div>
     </HideOnHoverDiv>
   );
 }
@@ -233,7 +266,15 @@ function HideOnHoverDiv(props: React.HTMLProps<HTMLDivElement>) {
   );
 }
 
-function DebugView() {
+function ScreenWatcherViewOuter() {
+  const preferences = useContext(PreferencesContext)!;
+  if (!preferences.boolOptions.watch) {
+    return <></>;
+  }
+  return <ScreenWatcherView />;
+}
+
+function ScreenWatcherView() {
   const { setBackgroundStyle, setMessage } = useContext(UIStateContext)!;
   const [response, setResponse] = useState<
     { description: string; activity: string; reason: string } | undefined
@@ -401,17 +442,17 @@ function DebugView() {
   }, [activity && row]);
 
   const preferences = useContext(PreferencesContext)!;
-  if (preferences.hide.debug) {
+  if (!preferences.boolOptions.debug) {
     return <></>;
   }
 
   return (
     <HideOnHoverDiv
-      className="absolute bottom-0 left-0 flex flex-col items-end justify-end w-96 max-w-96 bg-black bg-opacity-80 p-4 rounded-xl m-2 text-white text-xs font-mono h-[90vh]"
+      className="absolute bottom-[10vh] left-0 flex flex-col items-end justify-end w-96 max-w-96 bg-black bg-opacity-80 p-4 rounded-xl m-2 text-white text-sm font-mono h-[80vh]"
       style={style}
     >
       <div className="flex-1">
-        <pre className="text-xs whitespace-pre-wrap mt-2 w-full">
+        <pre className="text-sm whitespace-pre-wrap mt-2 w-full">
           numDiffPixels:{" "}
           <span
             className="transition-all duration-500 ease-in-out"
@@ -432,21 +473,21 @@ function DebugView() {
         )}
       </div>
       {analyzedImageRef.current && response && (
-        <div className="flex flex-col flex-1 space-y-8">
-          <pre className="text-xl whitespace-pre-wrap mt-2 w-full flex-1">
-            Verdict: <b>{response.activity}</b>
-          </pre>
-          <pre className="text-xs whitespace-pre-wrap mt-2 w-full flex-1">
+        <div className="flex flex-col flex-1 space-y-4 justify-between h-full">
+          <pre className="text-sm whitespace-pre-wrap w-full flex-1">
             {response.description}
           </pre>
-          <pre className="text-xs whitespace-pre-wrap mt-2 w-full flex-1">
+          <pre className="text-xl whitespace-pre-wrap w-full flex-1">
+            Verdict: <b>{response.activity}</b>
+          </pre>
+          <pre className="text-sm whitespace-pre-wrap w-full flex-1">
             Reason: {response.reason}
           </pre>
-          <img
+          {/* <img
             src={`data:image/png;base64,${analyzedImageRef.current}`}
             alt="screenshot"
             className="rounded-xl mt-2"
-          />
+          /> */}
         </div>
       )}
       {(!analyzedImageRef.current || !response) && image && (
@@ -461,14 +502,26 @@ function DebugView() {
 export function WidgetView() {
   return (
     <PreferencesProvider>
-      <ActivityLogProvider>
-        <ToposorterStateProvider>
+      <ToposorterStateProvider>
+        <ActivityLogProvider>
           <WidgetViewOuter>
-            <DebugView />
-            <ActualWidgetView />
+            <ScreenWatcherViewOuter />
+            <ActualWidgetViewOuter />
           </WidgetViewOuter>
-        </ToposorterStateProvider>
-      </ActivityLogProvider>
+        </ActivityLogProvider>
+      </ToposorterStateProvider>
     </PreferencesProvider>
   );
+}
+
+
+function formatDuration(durationInMillis: number): string {
+  if (durationInMillis < 0) {
+    return "-:--";
+  }
+  const minutes = Math.floor(durationInMillis / 60000);
+  const seconds = Math.floor((durationInMillis % 60000) / 1000);
+
+  const formattedDuration = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  return formattedDuration;
 }

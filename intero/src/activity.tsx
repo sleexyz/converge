@@ -6,7 +6,7 @@ import {
   useEffect,
   useMemo,
 } from "react";
-import { Id, useToposorterState } from "./ToposorterState";
+import { Id, ToposorterStateManager, ToposorterStateManagerContext, useToposorterState } from "./ToposorterState";
 import { useLocalStorageState } from "./state";
 import { Draft, original, produce } from "immer";
 
@@ -26,9 +26,10 @@ export function useSyncActivityState() {
   }, [activeNode, activityLog]);
 }
 
-interface LogRow {
+export interface LogRow {
   activityId: Id;
   createdAt: Date;
+  endTime?: Date;
   type: "start" | "stop";
 }
 
@@ -39,7 +40,8 @@ interface ActivityLogData {
 class ActivityLog {
   constructor(
     readonly state: ActivityLogData,
-    readonly setState: Dispatch<SetStateAction<ActivityLogData>>
+    readonly setState: Dispatch<SetStateAction<ActivityLogData>>,
+    readonly toposorterStateManager: ToposorterStateManager
   ) {}
 
   private getLastRow(): LogRow | null {
@@ -54,6 +56,7 @@ class ActivityLog {
     }
   }
 
+  
   // idempotent
   start(activityId: Id) {
     const activeActivity = this.getActiveActivity();
@@ -82,9 +85,12 @@ class ActivityLog {
   private startActivity(activityId: Id) {
     this.setState(
       produce((draft) => {
+        const node = this.toposorterStateManager.state().getNode(activityId);
+        const timerDuration = node.estimatedTime ?? 15; // minutes
         draft.rows.push({
           activityId,
           createdAt: new Date(),
+          endTime: new Date(Date.now() + timerDuration * 60 * 1000),
           type: "start",
         });
       })
@@ -110,6 +116,7 @@ export function ActivityLogProvider({
 }: {
   children: React.ReactNode;
 }) {
+  const toposorterStateManager = useContext(ToposorterStateManagerContext)!;
   const [state, setState] = useLocalStorageState<ActivityLogData>(
     "activityLog",
     {
@@ -124,7 +131,7 @@ export function ActivityLogProvider({
     })
   );
   const activityLog = useMemo(
-    () => new ActivityLog(state, setState),
+    () => new ActivityLog(state, setState, toposorterStateManager),
     [state, setState]
   );
   return (
