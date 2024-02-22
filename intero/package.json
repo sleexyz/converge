@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@dagrejs/dagre": "github:futpib/dagre#order-options",
+    "@microsoft/fetch-event-source": "^2.0.1",
     "@pixi/filter-advanced-bloom": "^5.1.1",
     "@pixi/filter-crt": "^5.1.1",
     "@pixi/react": "^7.1.1",

@@ -22,7 +22,6 @@ import {
 import { ScreenWatcher } from "../screen_watcher";
 import { useInWindow } from "./mouse_hacks";
 import * as pixelmatch from "pixelmatch";
-import { produce } from "immer";
 import { PreferencesContext, PreferencesProvider } from "../preference_state";
 
 
@@ -199,44 +198,60 @@ function ActualWidgetView({ activity, row }: { activity: TNode; row: LogRow }) {
   );
 }
 
-type Key = "distracted" | "aimless";
-
-function orderedEntries<T>(obj: Record<Key, T>): [Key, T][] {
-  return (["distracted", "aimless"] as Key[]).map((key) => [key, obj[key]]);
+enum UIState {
+  Distracted,
+  Aimless,
 }
 
-function getFirstDefined<T>(obj: Record<Key, T>, defaultValue: T): T {
-  for (const [_, value] of orderedEntries(obj)) {
-    if (value !== undefined) {
-      return value;
-    }
-  }
-  return defaultValue;
-}
 function WidgetViewOuter(props: { children: React.ReactNode }) {
-  const [backgroundStyle, setBackgroundStyle] = useState<
-    Record<string, React.CSSProperties>
-  >({});
+  const [uiState, setUIState] = useState<UIState|undefined>(undefined);
 
-  const [message, setMessage] = useState<Record<string, JSX.Element>>({});
+  const message = useMemo(() => {
+    if (uiState === UIState.Distracted) {
+      return (
+        <div
+          className="flex items-center justify-center w-full h-full text-white"
+          style={{ fontSize: "10rem" }}
+        >
+          Hey! Focus!
+        </div>
+      );
+    }
+    if (uiState === UIState.Aimless) {
+      return (
+        <div
+          className="flex items-center justify-center w-full h-full text-black"
+          style={{ fontSize: "10rem" }}
+        >
+          What's next?
+        </div>
+      );
+    }
+    return <></>;
+  }, [uiState]);
+
+  const backgroundStyle = useMemo(() => {
+    if (uiState === UIState.Distracted) {
+      return { backgroundColor: "rgba(0, 0, 0, 0.7)" };
+    }
+    if (uiState === UIState.Aimless) {
+      return { backgroundColor: "rgba(255, 255, 255, 0.7)" };
+    }
+    return { backgroundColor: "rgba(0, 0, 0, 0.0)" };
+  }, [uiState]);
 
   const uiStateContext = useMemo(
-    () => ({
-      setBackgroundStyle,
-      setMessage,
-    }),
-    [setBackgroundStyle, setMessage]
+    () => ({setUIState}),
+    [setUIState]
   );
 
   return (
     <div
       className="w-[100vw] h-[100vh] transition-colors duration-[2000ms] ease-in-out"
-      style={getFirstDefined(backgroundStyle, {
-        backgroundColor: "rgba(0, 0, 0, 0.0)",
-      })}
+      style={backgroundStyle}
     >
       <UIStateContext.Provider value={uiStateContext}>
-        {getFirstDefined(message, <></>)}
+        {message}
         {props.children}
       </UIStateContext.Provider>
     </div>
@@ -244,10 +259,9 @@ function WidgetViewOuter(props: { children: React.ReactNode }) {
 }
 
 const UIStateContext = createContext<{
-  setBackgroundStyle: React.Dispatch<
-    React.SetStateAction<Record<string, React.CSSProperties>>
+  setUIState: React.Dispatch<
+    React.SetStateAction<UIState | undefined>
   >;
-  setMessage: React.Dispatch<React.SetStateAction<Record<string, JSX.Element>>>;
 } | null>(null);
 
 function HideOnHoverDiv(props: React.HTMLProps<HTMLDivElement>) {
@@ -268,6 +282,21 @@ function HideOnHoverDiv(props: React.HTMLProps<HTMLDivElement>) {
 
 function ScreenWatcherViewOuter() {
   const preferences = useContext(PreferencesContext)!;
+  const { setUIState } = useContext(UIStateContext)!;
+
+  const { activity, row } = useActiveActivity();
+  useEffect(() => {
+    if (!(activity && row)) {
+      setUIState(UIState.Aimless);
+    } else {
+      setUIState(state => {
+        if (state === UIState.Aimless) {
+          return undefined;
+        }
+        return state;
+      });
+    }
+  }, [activity && row]);
   if (!preferences.boolOptions.watch) {
     return <></>;
   }
@@ -275,7 +304,7 @@ function ScreenWatcherViewOuter() {
 }
 
 function ScreenWatcherView() {
-  const { setBackgroundStyle, setMessage } = useContext(UIStateContext)!;
+  const { setUIState } = useContext(UIStateContext)!;
   const [response, setResponse] = useState<
     { description: string; activity: string; reason: string } | undefined
   >(undefined);
@@ -346,7 +375,7 @@ function ScreenWatcherView() {
         try {
           abortControllerRef.current = new AbortController();
           const response =
-            await ScreenWatcher.instance.getScreenshotDescriptionLocal(
+            await ScreenWatcher.instance.getScreenshotDescriptionMoondreamFastApi(
               image,
               abortControllerRef.current
             );
@@ -369,35 +398,14 @@ function ScreenWatcherView() {
 
   useEffect(() => {
     if (response?.activity === "distraction") {
-      setBackgroundStyle(
-        produce((draft) => {
-          draft.distracted = { backgroundColor: "rgba(0, 0, 0, 0.7)" };
-        })
-      );
-
-      setMessage(
-        produce((draft) => {
-          draft.distracted = (
-            <div
-              className="flex items-center justify-center w-full h-full text-white"
-              style={{ fontSize: "10rem" }}
-            >
-              Hey! Focus!
-            </div>
-          );
-        })
-      );
+      setUIState(UIState.Distracted);
     } else {
-      setBackgroundStyle(
-        produce((draft) => {
-          delete draft.distracted;
-        })
-      );
-      setMessage(
-        produce((draft) => {
-          delete draft.distracted;
-        })
-      );
+      setUIState(state => {
+        if (state === UIState.Distracted) {
+          return undefined;
+        }
+        return state;
+      });
     }
   }, [response?.activity]);
 
@@ -406,41 +414,6 @@ function ScreenWatcherView() {
     numDiffPixelsStyle.backgroundColor = "rgba(255, 255, 255, 0.5)";
   }
 
-  const { activity, row } = useActiveActivity();
-  useEffect(() => {
-    if (!(activity && row)) {
-      setBackgroundStyle(
-        produce((draft) => {
-          draft.aimless = { backgroundColor: "rgba(255, 255, 255, 0.7)" };
-        })
-      );
-
-      setMessage(
-        produce((draft) => {
-          draft.aimless = (
-            <div
-              className="flex items-center justify-center w-full h-full text-black"
-              style={{ fontSize: "10rem" }}
-            >
-              What's next?
-            </div>
-          );
-        })
-      );
-    } else {
-      setBackgroundStyle(
-        produce((draft) => {
-          delete draft.aimless;
-        })
-      );
-      setMessage(
-        produce((draft) => {
-          delete draft.aimless;
-        })
-      );
-    }
-  }, [activity && row]);
-
   const preferences = useContext(PreferencesContext)!;
   if (!preferences.boolOptions.debug) {
     return <></>;
@@ -448,7 +421,7 @@ function ScreenWatcherView() {
 
   return (
     <HideOnHoverDiv
-      className="absolute bottom-[10vh] left-0 flex flex-col items-end justify-end w-96 max-w-96 bg-black bg-opacity-80 p-4 rounded-xl m-2 text-white text-sm font-mono h-[80vh]"
+      className="absolute bottom-[20vh] left-0 flex flex-col items-end justify-end w-96 max-w-96 bg-black bg-opacity-80 p-4 rounded-xl m-2 text-white text-sm font-mono h-[50vh]"
       style={style}
     >
       <div className="flex-1">
@@ -473,16 +446,16 @@ function ScreenWatcherView() {
         )}
       </div>
       {analyzedImageRef.current && response && (
-        <div className="flex flex-col flex-1 space-y-4 justify-between h-full">
+        <div className="flex flex-col flex-1 space-y-4 justify-between h-full w-full">
           <pre className="text-sm whitespace-pre-wrap w-full flex-1">
             {response.description}
           </pre>
           <pre className="text-xl whitespace-pre-wrap w-full flex-1">
             Verdict: <b>{response.activity}</b>
           </pre>
-          <pre className="text-sm whitespace-pre-wrap w-full flex-1">
+          {/* <pre className="text-sm whitespace-pre-wrap w-full flex-1">
             Reason: {response.reason}
-          </pre>
+          </pre> */}
           {/* <img
             src={`data:image/png;base64,${analyzedImageRef.current}`}
             alt="screenshot"
