@@ -27,7 +27,7 @@ pub fn open_widget_window(app: &AppHandle) {
     .decorations(false)
     .transparent(true)
     .always_on_top(true)
-    .visible(false)
+    .visible(true)
     .position(0.0, 0.0)
     .inner_size(700.0, 600.0)
     .build()
@@ -43,7 +43,6 @@ pub fn open_widget_window(app: &AppHandle) {
         //     }
         // }
         let _ = window.set_ignore_cursor_events(true);
-        // let _ = window.show().ok();
         position_window(&window, |display_pos, display_size, win_frame_size| {
             NSPoint {
                 x: (display_pos.x + (display_size.width)) - (win_frame_size.width),

@@ -3,9 +3,6 @@ import { Stage } from '@pixi/react';
 import { Cubism4InternalModel, Live2DModel, clamp } from 'pixi-live2d-display';
 import { useRef, useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
-import { CRTFilter } from '@pixi/filter-crt';
-
-
 
 (window as any).PIXI = PIXI;
 
@@ -16,6 +13,13 @@ interface MouseMoved {
     window_y: number;
     window_width: number;
     window_height: number;
+}
+
+interface ModelConfig {
+    url: string;
+    scale: number;
+    x: number;
+    y?: number;
 }
 
 export function XEyes() {
@@ -68,8 +72,8 @@ export function XEyes() {
         // let config = { url: "/assets/shizuku/shizuku.model.json", scale: 0.5, x:100, y:-50 };
 
         // // Lip-syncable:
-        let config = { url: "/assets/mao/mao_pro.model3.json", scale: 0.15, x: -50 };
-        // let config = { url: "/assets/haru/haru_greeter_t05.model3.json", scale: 0.4, x: 0 };
+        // let config: ModelConfig = { url: "/assets/mao/mao_pro.model3.json", scale: 0.15, x: -50 };
+        let config: ModelConfig = { url: "/assets/haru/runtime/haru_greeter_t05.model3.json", scale: 0.4, x: 0 };
 
         const model = await Live2DModel.from(config.url);
 
